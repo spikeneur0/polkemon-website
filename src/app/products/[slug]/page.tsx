@@ -66,9 +66,34 @@ export default async function ProductPage({ params }: Props) {
     },
   });
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    image: product.images[0] || undefined,
+    sku: product.sku || undefined,
+    offers: {
+      "@type": "Offer",
+      price: (product.price / 100).toFixed(2),
+      priceCurrency: "USD",
+      availability: product.isSoldOut
+        ? "https://schema.org/OutOfStock"
+        : "https://schema.org/InStock",
+      url: `${SITE_URL}/products/${product.slug}`,
+    },
+  };
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Breadcrumb */}
+    <>
+      {/* JSON-LD Structured Data — placed at top level per best practice */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-1 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">
           Home
@@ -231,29 +256,7 @@ export default async function ProductPage({ params }: Props) {
         </section>
       )}
 
-      {/* JSON-LD Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Product",
-            name: product.name,
-            description: product.description,
-            image: product.images[0] || undefined,
-            sku: product.sku || undefined,
-            offers: {
-              "@type": "Offer",
-              price: (product.price / 100).toFixed(2),
-              priceCurrency: "USD",
-              availability: product.isSoldOut
-                ? "https://schema.org/OutOfStock"
-                : "https://schema.org/InStock",
-              url: `${SITE_URL}/products/${product.slug}`,
-            },
-          }),
-        }}
-      />
     </div>
+    </>
   );
 }

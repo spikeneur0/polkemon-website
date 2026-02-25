@@ -14,6 +14,8 @@ export function formatPrice(cents: number): string {
 
 export function slugify(text: string): string {
   return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // strip accents (é→e, ü→u, etc.)
     .toLowerCase()
     .replace(/[^\w\s-]/g, "")
     .replace(/\s+/g, "-")

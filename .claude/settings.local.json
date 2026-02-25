@@ -5,7 +5,14 @@
       "Bash(npm init:*)",
       "Bash(npm install:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(where:*)",
+      "Bash(npx vercel:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx prisma validate:*)",
+      "Bash(DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\" npx prisma generate:*)",
+      "Bash(DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\" npx next build:*)",
+      "Bash(DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\" STRIPE_SECRET_KEY=\"sk_test_dummy\" STRIPE_WEBHOOK_SECRET=\"whsec_dummy\" AUTH_SECRET=\"dummysecret1234567890123456789012\" npx next build)"
     ]
   }
 }

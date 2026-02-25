@@ -4,6 +4,8 @@ import { ProductGrid } from "@/components/products/product-grid";
 import { CATEGORIES } from "@/lib/constants";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: Promise<{ category: string }>;
 }

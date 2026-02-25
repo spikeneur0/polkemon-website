@@ -6,6 +6,8 @@ import { formatPrice } from "@/lib/utils";
 import { CATEGORIES } from "@/lib/constants";
 import { AdminProductActions } from "@/components/admin/product-actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminProductsPage() {
   const products = await db.product.findMany({
     orderBy: { createdAt: "desc" },

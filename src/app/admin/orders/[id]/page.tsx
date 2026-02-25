@@ -6,6 +6,8 @@ import { OrderTrackingForm } from "@/components/admin/order-tracking-form";
 import { OrderNotesForm } from "@/components/admin/order-notes-form";
 import type { ShippingAddress } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: Promise<{ id: string }>;
 }

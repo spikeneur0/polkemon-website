@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 
@@ -91,7 +92,7 @@ function DialogPortal({ children }: { children: React.ReactNode }) {
   React.useEffect(() => setMounted(true), []);
   if (!mounted) return null;
   return typeof document !== "undefined"
-    ? React.createPortal(children, document.body)
+    ? createPortal(children, document.body)
     : null;
 }
 

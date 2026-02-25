@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
 import { SubscriberExport } from "@/components/admin/subscriber-export";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminSubscribersPage() {
   const subscribers = await db.subscriber.findMany({
     orderBy: { createdAt: "desc" },

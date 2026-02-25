@@ -5,6 +5,8 @@ import { ProductFilters } from "@/components/products/product-filters";
 import { ProductSearch } from "@/components/products/product-search";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Shop",
   description: "Browse our collection of premium trading cards and accessories.",

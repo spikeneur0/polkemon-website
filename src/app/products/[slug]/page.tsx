@@ -8,6 +8,8 @@ import { CATEGORIES } from "@/lib/constants";
 import { AddToCartButton } from "@/components/products/add-to-cart-button";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: Promise<{ slug: string }>;
 }

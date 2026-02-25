@@ -6,6 +6,8 @@ import { formatPrice } from "@/lib/utils";
 import { CATEGORIES, SITE_NAME } from "@/lib/constants";
 import { NewsletterSignup } from "@/components/home/newsletter-signup";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const featuredProducts = await db.product.findMany({
     where: { isFeatured: true, isPublished: true },

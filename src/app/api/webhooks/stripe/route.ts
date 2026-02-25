@@ -44,8 +44,8 @@ export async function POST(req: Request) {
       quantity: number;
     }[];
 
-    const shippingDetails = session.shipping_details;
-    const customerDetails = session.customer_details;
+    const shippingDetails = (session as any).shipping_details;
+    const customerDetails = (session as any).customer_details;
 
     const shippingAddress = shippingDetails?.address
       ? {

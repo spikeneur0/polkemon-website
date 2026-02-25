@@ -61,19 +61,19 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero Banner */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <section className="relative overflow-hidden border-b border-border" style={{ backgroundColor: "#F6F0E6" }}>
         {/* Decorative background pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute -left-4 top-0 h-72 w-72 rounded-full bg-orange-500 blur-3xl" />
-          <div className="absolute -right-4 bottom-0 h-72 w-72 rounded-full bg-blue-500 blur-3xl" />
-          <div className="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-500 blur-3xl" />
+        <div className="absolute inset-0 opacity-[0.4]">
+          <div className="absolute -left-4 top-0 h-72 w-72 rounded-full bg-orange-200 blur-3xl" />
+          <div className="absolute -right-4 bottom-0 h-72 w-72 rounded-full bg-amber-100 blur-3xl" />
+          <div className="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-yellow-100 blur-3xl" />
         </div>
         {/* Grid pattern overlay */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.04]"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)",
+              "linear-gradient(rgba(0,0,0,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.08) 1px, transparent 1px)",
             backgroundSize: "40px 40px",
           }}
         />
@@ -83,33 +83,33 @@ export default async function HomePage() {
             alt={SITE_NAME}
             width={96}
             height={96}
-            className="h-24 w-24 drop-shadow-2xl"
+            className="h-24 w-24 drop-shadow-md"
             priority
           />
-          <h1 className="mt-6 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+          <h1 className="mt-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             Premium Trading Cards
           </h1>
-          <p className="mt-4 max-w-xl text-lg text-slate-300">
+          <p className="mt-4 max-w-xl text-lg text-muted-foreground">
             Your trusted source for Pokemon, One Piece, Yu-Gi-Oh, Magic: The
             Gathering, and more. Based in Ann Arbor, Michigan.
           </p>
           <div className="mt-8 flex gap-4">
             <Link
               href="/products"
-              className="inline-flex items-center gap-2 rounded-md bg-white px-8 py-3 text-sm font-medium text-slate-900 shadow-lg transition-all hover:bg-slate-100 hover:shadow-xl"
+              className="inline-flex items-center gap-2 rounded-md bg-foreground px-8 py-3 text-sm font-medium text-background shadow-lg transition-all hover:bg-foreground/90 hover:shadow-xl"
             >
               Shop Now
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/about"
-              className="inline-flex items-center rounded-md border border-white/20 bg-white/10 px-8 py-3 text-sm font-medium text-white backdrop-blur transition-colors hover:bg-white/20"
+              className="inline-flex items-center rounded-md border border-foreground/20 bg-foreground/5 px-8 py-3 text-sm font-medium text-foreground transition-colors hover:bg-foreground/10"
             >
               About Us
             </Link>
           </div>
           {/* Trust badges */}
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-xs font-medium uppercase tracking-wider text-slate-400">
+          <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
               100% Authentic

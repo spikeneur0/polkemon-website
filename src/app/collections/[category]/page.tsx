@@ -49,14 +49,10 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
     "Anime and gaming themed apparel and accessories.",
   "jewelry-pins":
     "Enamel pins, jewelry, and wearable collectibles.",
-  stickers:
-    "Sticker packs and decals from your favorite series.",
   "food-drink":
     "Imported snacks, candy, and drinks from Japan and beyond.",
   other:
     "Other collectibles and miscellaneous products.",
-  "gift-cards":
-    "Gift cards for Polkemon Trading Co. The perfect gift for any collector.",
 };
 
 interface Props {

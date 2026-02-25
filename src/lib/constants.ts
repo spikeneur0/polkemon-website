@@ -27,10 +27,8 @@ export const CATEGORIES = [
   { slug: "keychains", name: "Keychains" },
   { slug: "clothing", name: "Clothing" },
   { slug: "jewelry-pins", name: "Jewelry & Pins" },
-  { slug: "stickers", name: "Stickers" },
   { slug: "food-drink", name: "Food & Drink" },
   { slug: "other", name: "Other" },
-  { slug: "gift-cards", name: "Gift Cards" },
 ] as const;
 
 export const ORDER_STATUSES = [

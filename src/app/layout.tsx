@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Toaster } from "@/components/ui/toaster";
+import { BackToTop } from "@/components/layout/back-to-top";
 import { SITE_NAME, SITE_DESCRIPTION } from "@/lib/constants";
 
 const inter = Inter({
@@ -36,6 +37,7 @@ export default function RootLayout({
         <main className="min-h-[calc(100vh-8rem)]">{children}</main>
         <Footer />
         <Toaster />
+        <BackToTop />
       </body>
     </html>
   );

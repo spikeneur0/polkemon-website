@@ -4,8 +4,9 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
-import { CATEGORIES } from "@/lib/constants";
+import { CATEGORIES, SITE_URL } from "@/lib/constants";
 import { AddToCartButton } from "@/components/products/add-to-cart-button";
+import { ProductImageGallery } from "@/components/products/product-image-gallery";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -88,47 +89,11 @@ export default async function ProductPage({ params }: Props) {
 
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
         {/* Images */}
-        <div className="space-y-4">
-          <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-            {product.images[0] ? (
-              <Image
-                src={product.images[0]}
-                alt={product.name}
-                fill
-                priority
-                className="object-cover"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <span className="text-6xl text-muted-foreground/30">🃏</span>
-              </div>
-            )}
-            {product.isSoldOut && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                <span className="text-lg font-bold uppercase tracking-[0.15em] text-white">
-                  Sold Out
-                </span>
-              </div>
-            )}
-          </div>
-          {product.images.length > 1 && (
-            <div className="grid grid-cols-4 gap-2">
-              {product.images.slice(1).map((img, i) => (
-                <div
-                  key={i}
-                  className="relative aspect-square overflow-hidden rounded-md bg-muted"
-                >
-                  <Image
-                    src={img}
-                    alt={`${product.name} ${i + 2}`}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <ProductImageGallery
+          images={product.images}
+          productName={product.name}
+          isSoldOut={product.isSoldOut}
+        />
 
         {/* Info */}
         <div className="flex flex-col">
@@ -157,21 +122,62 @@ export default async function ProductPage({ params }: Props) {
                 )}
             </div>
 
-            {product.sku && (
-              <p className="text-xs text-muted-foreground">
-                SKU: {product.sku}
-              </p>
-            )}
-
             <div className="prose prose-sm max-w-none text-muted-foreground">
               <p>{product.description}</p>
             </div>
 
-            {product.quantity > 0 && product.quantity <= 5 && !product.isSoldOut && (
-              <p className="text-sm font-medium text-destructive">
-                Only {product.quantity} left in stock
-              </p>
-            )}
+            {/* Details section */}
+            <div className="space-y-3 border-t border-border pt-4">
+              <h3 className="text-sm font-semibold">Details</h3>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground">Category:</span>
+                <Link
+                  href={`/collections/${product.category}`}
+                  className="inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-medium transition-colors hover:bg-accent/80"
+                >
+                  {categoryLabel}
+                </Link>
+              </div>
+
+              {product.tags.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Tags:</span>
+                  {product.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {product.sku && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">SKU:</span>
+                  <span className="text-xs font-mono">{product.sku}</span>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Stock:</span>
+                {product.isSoldOut ? (
+                  <span className="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">
+                    Sold Out
+                  </span>
+                ) : product.quantity <= 5 ? (
+                  <span className="inline-flex items-center rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                    Low Stock: {product.quantity} left
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                    In Stock
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="mt-8">
@@ -198,7 +204,7 @@ export default async function ProductPage({ params }: Props) {
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center">
-                      <span className="text-3xl text-muted-foreground/30">🃏</span>
+                      <span className="text-3xl text-muted-foreground/30">&#x1F0CF;</span>
                     </div>
                   )}
                   {p.isSoldOut && (
@@ -220,6 +226,30 @@ export default async function ProductPage({ params }: Props) {
           </div>
         </section>
       )}
+
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: product.name,
+            description: product.description,
+            image: product.images[0] || undefined,
+            sku: product.sku || undefined,
+            offers: {
+              "@type": "Offer",
+              price: (product.price / 100).toFixed(2),
+              priceCurrency: "USD",
+              availability: product.isSoldOut
+                ? "https://schema.org/OutOfStock"
+                : "https://schema.org/InStock",
+              url: `${SITE_URL}/products/${product.slug}`,
+            },
+          }),
+        }}
+      />
     </div>
   );
 }

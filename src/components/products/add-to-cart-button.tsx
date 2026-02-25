@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Minus, Plus, ShoppingCart } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
+import { toast } from "@/components/ui/use-toast";
 import type { CartItem } from "@/types";
 
 interface AddToCartButtonProps {
@@ -44,6 +45,15 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
     addItem(item);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+
+    // Show toast notification
+    toast({
+      title: "Added to cart",
+      description: product.name,
+    });
+
+    // Open the cart sheet via custom event
+    window.dispatchEvent(new CustomEvent("open-cart"));
   }
 
   return (

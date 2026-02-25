@@ -1,8 +1,86 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, MapPin, Heart, Shield } from "lucide-react";
+import {
+  ArrowRight,
+  MapPin,
+  Heart,
+  Shield,
+  Swords,
+  Sparkles,
+  Package,
+  Shirt,
+  Gift,
+  Puzzle,
+} from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
+import { FaqAccordion } from "@/components/shared/faq-accordion";
 import type { Metadata } from "next";
+
+const PRODUCT_CATEGORIES = [
+  {
+    icon: Sparkles,
+    name: "Pokemon TCG",
+    description: "Booster boxes, packs, and ETBs",
+  },
+  {
+    icon: Swords,
+    name: "One Piece TCG",
+    description: "Booster boxes and starter decks",
+  },
+  {
+    icon: Puzzle,
+    name: "Yu-Gi-Oh!",
+    description: "Booster boxes and structure decks",
+  },
+  {
+    icon: Shield,
+    name: "Magic: The Gathering",
+    description: "Boosters, commander decks, and more",
+  },
+  {
+    icon: Package,
+    name: "TCG Supplies",
+    description: "Sleeves, binders, and accessories",
+  },
+  {
+    icon: Shirt,
+    name: "Collectibles & Merch",
+    description: "Figures, plush, clothing, and more",
+  },
+  {
+    icon: Gift,
+    name: "Gift Cards",
+    description: "The perfect gift for any collector",
+  },
+];
+
+const FAQ_ITEMS = [
+  {
+    question: "Do you ship internationally?",
+    answer:
+      "Currently we ship within the United States. We are working on expanding our shipping to include international destinations in the future. Stay tuned for updates!",
+  },
+  {
+    question: "Are all products authentic?",
+    answer:
+      "Yes, all products are sourced from authorized distributors and are 100% authentic and factory sealed. We take authenticity very seriously and guarantee the genuineness of every item we sell.",
+  },
+  {
+    question: "What payment methods do you accept?",
+    answer:
+      "We accept all major credit cards (Visa, Mastercard, American Express, Discover) through Stripe, our secure payment processor. All transactions are encrypted and secure.",
+  },
+  {
+    question: "What is your return policy?",
+    answer:
+      "We accept returns within 14 days for sealed products in their original condition. Opened or damaged products cannot be returned. Please contact us to initiate a return.",
+  },
+  {
+    question: "Do you buy/trade cards?",
+    answer:
+      "We're currently focused on selling products and do not offer a buy or trade program at this time. We may introduce this in the future, so keep an eye on our announcements!",
+  },
+];
 
 export const metadata: Metadata = {
   title: "About Us",
@@ -82,6 +160,49 @@ export default function AboutPage() {
             Proudly operated from Ann Arbor, Michigan. Fast shipping across the
             United States.
           </p>
+        </div>
+      </div>
+
+      {/* What We Carry */}
+      <div className="mt-16">
+        <h2 className="text-center text-xl font-bold">What We Carry</h2>
+        <p className="mt-2 text-center text-sm text-muted-foreground">
+          From the latest booster boxes to collectible merch, we have something
+          for every fan.
+        </p>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {PRODUCT_CATEGORIES.map((cat) => {
+            const Icon = cat.icon;
+            return (
+              <div
+                key={cat.name}
+                className="flex items-start gap-3 rounded-lg border border-border p-4"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">{cat.name}</h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {cat.description}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* FAQ */}
+      <div className="mt-16">
+        <h2 className="text-center text-xl font-bold">
+          Frequently Asked Questions
+        </h2>
+        <p className="mt-2 text-center text-sm text-muted-foreground">
+          Got questions? We have answers.
+        </p>
+        <div className="mt-8">
+          <FaqAccordion items={FAQ_ITEMS} />
         </div>
       </div>
 

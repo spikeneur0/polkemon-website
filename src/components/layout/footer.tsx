@@ -76,29 +76,41 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Newsletter */}
+          {/* Quick Links */}
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider">
-              Stay Updated
+              Quick Links
             </h3>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Subscribe for new product drops and exclusive deals.
-            </p>
-            <form className="mt-3 flex gap-2" action="/api/subscribe" method="POST">
-              <input
-                type="email"
-                name="email"
-                required
-                placeholder="your@email.com"
-                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-              <button
-                type="submit"
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-              >
-                Join
-              </button>
-            </form>
+            <ul className="mt-4 space-y-2">
+              <li>
+                <Link
+                  href="/about#faq"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <span className="text-sm text-muted-foreground">
+                  Shipping Info
+                </span>
+              </li>
+              <li>
+                <span className="text-sm text-muted-foreground">
+                  Return Policy
+                </span>
+              </li>
+              <li>
+                <span className="text-sm text-muted-foreground">
+                  Terms of Service
+                </span>
+              </li>
+              <li>
+                <span className="text-sm text-muted-foreground">
+                  Privacy Policy
+                </span>
+              </li>
+            </ul>
           </div>
         </div>
 

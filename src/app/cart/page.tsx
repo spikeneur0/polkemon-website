@@ -5,12 +5,35 @@ import Link from "next/link";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { formatPrice } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+interface FeaturedProduct {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  compareAtPrice: number | null;
+  images: string[];
+  isSoldOut: boolean;
+  category: string;
+}
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, subtotal, clearCart } =
     useCartStore();
   const [loading, setLoading] = useState(false);
+  const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([]);
+
+  useEffect(() => {
+    if (items.length === 0) {
+      fetch("/api/featured")
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) setFeaturedProducts(data);
+        })
+        .catch(() => {});
+    }
+  }, [items.length]);
 
   async function handleCheckout() {
     setLoading(true);
@@ -38,19 +61,70 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-center px-4 py-20 sm:px-6 lg:px-8">
-        <ShoppingBag className="h-16 w-16 text-muted-foreground" />
-        <h1 className="mt-4 text-2xl font-bold">Your cart is empty</h1>
-        <p className="mt-2 text-muted-foreground">
-          Browse our products and add something you love.
-        </p>
-        <Link
-          href="/products"
-          className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Continue Shopping
-        </Link>
+      <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+        <div className="flex flex-col items-center justify-center">
+          <ShoppingBag className="h-16 w-16 text-muted-foreground" />
+          <h1 className="mt-4 text-2xl font-bold">Your cart is empty</h1>
+          <p className="mt-2 text-muted-foreground">
+            Browse our products and add something you love.
+          </p>
+          <Link
+            href="/products"
+            className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Continue Shopping
+          </Link>
+        </div>
+
+        {/* Popular Products */}
+        {featuredProducts.length > 0 && (
+          <section className="mt-16">
+            <h2 className="mb-6 text-center text-xl font-bold">
+              Popular Products
+            </h2>
+            <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-4">
+              {featuredProducts.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/products/${p.slug}`}
+                  className="group block"
+                >
+                  <div className="relative aspect-[4/5] overflow-hidden rounded-md bg-muted">
+                    {p.images[0] ? (
+                      <Image
+                        src={p.images[0]}
+                        alt={p.name}
+                        fill
+                        sizes="(max-width: 640px) 50vw, 25vw"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <span className="text-3xl text-muted-foreground/30">
+                          &#x1F0CF;
+                        </span>
+                      </div>
+                    )}
+                    {p.isSoldOut && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                        <span className="text-xs font-bold uppercase tracking-[0.15em] text-white">
+                          Sold Out
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="mt-2 text-sm font-medium line-clamp-2">
+                    {p.name}
+                  </h3>
+                  <p className="mt-0.5 text-sm font-semibold tabular-nums">
+                    {formatPrice(p.price)}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     );
   }

@@ -41,7 +41,11 @@ export default async function HomePage() {
   });
 
   const newArrivals = await db.product.findMany({
-    where: { isPublished: true },
+    where: {
+      isPublished: true,
+      isSoldOut: false,
+      NOT: { images: { equals: [] } },
+    },
     orderBy: { createdAt: "desc" },
     take: 4,
     select: {

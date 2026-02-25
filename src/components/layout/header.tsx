@@ -248,13 +248,13 @@ function MobileNavGroup({
         />
       </button>
       {open && (
-        <div className="ml-2 space-y-0.5">
+        <div className="ml-3 space-y-0.5">
           {slugs.map((slug) => (
             <Link
               key={slug}
               href={`/collections/${slug}`}
               onClick={onNavigate}
-              className="block rounded-md px-3 py-1.5 pl-4 text-sm text-foreground/70 transition-colors hover:bg-accent hover:text-foreground"
+              className="block truncate rounded-md px-3 py-1.5 text-sm text-foreground/70 transition-colors hover:bg-accent hover:text-foreground"
             >
               {getCategoryName(slug)}
             </Link>

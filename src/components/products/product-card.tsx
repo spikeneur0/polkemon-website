@@ -2,9 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { ShoppingCart } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { useCartStore } from "@/stores/cart-store";
+import { useToast } from "@/components/ui/use-toast";
 
 interface ProductCardProps {
+  id: string;
   name: string;
   slug: string;
   price: number;
@@ -15,6 +19,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({
+  id,
   name,
   slug,
   price,
@@ -22,6 +27,24 @@ export function ProductCard({
   image,
   isSoldOut,
 }: ProductCardProps) {
+  const addItem = useCartStore((s) => s.addItem);
+  const { toast } = useToast();
+
+  function handleQuickAdd(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem({
+      productId: id,
+      name,
+      slug,
+      price,
+      image: image || "",
+      quantity: 1,
+    });
+    toast({ title: "Added to cart", description: name });
+    window.dispatchEvent(new CustomEvent("open-cart"));
+  }
+
   return (
     <Link href={`/products/${slug}`} className="group block">
       <div className="relative aspect-[4/5] overflow-hidden rounded-md bg-muted">
@@ -44,6 +67,16 @@ export function ProductCard({
               Sold Out
             </span>
           </div>
+        )}
+        {/* Quick add-to-cart button */}
+        {!isSoldOut && (
+          <button
+            onClick={handleQuickAdd}
+            className="absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-background opacity-0 shadow-lg transition-all duration-200 hover:scale-110 group-hover:opacity-100"
+            aria-label={`Add ${name} to cart`}
+          >
+            <ShoppingCart className="h-4 w-4" />
+          </button>
         )}
       </div>
       <div className="mt-3 space-y-1">

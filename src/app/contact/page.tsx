@@ -1,5 +1,6 @@
 import { Mail, MapPin, Clock } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
+import { ContactForm } from "@/components/contact/contact-form";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -22,54 +23,7 @@ export default function ContactPage() {
 
       <div className="mt-12 grid gap-8 lg:grid-cols-2">
         {/* Contact Form */}
-        <div className="rounded-lg border border-border p-6">
-          <h2 className="text-lg font-semibold">Send a Message</h2>
-          <form className="mt-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium">Name</label>
-              <input
-                type="text"
-                required
-                className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="Your name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Email</label>
-              <input
-                type="email"
-                required
-                className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="your@email.com"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Subject</label>
-              <select className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                <option>General Inquiry</option>
-                <option>Order Support</option>
-                <option>Wholesale / Distribution</option>
-                <option>Returns & Refunds</option>
-                <option>Other</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Message</label>
-              <textarea
-                rows={5}
-                required
-                className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="How can we help?"
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full rounded-md bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              Send Message
-            </button>
-          </form>
-        </div>
+        <ContactForm />
 
         {/* Contact Info */}
         <div className="space-y-6">

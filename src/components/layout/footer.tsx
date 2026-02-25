@@ -91,24 +91,36 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <span className="text-sm text-muted-foreground">
+                <Link
+                  href="/shipping"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
                   Shipping Info
-                </span>
+                </Link>
               </li>
               <li>
-                <span className="text-sm text-muted-foreground">
+                <Link
+                  href="/returns"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
                   Return Policy
-                </span>
+                </Link>
               </li>
               <li>
-                <span className="text-sm text-muted-foreground">
+                <Link
+                  href="/terms"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
                   Terms of Service
-                </span>
+                </Link>
               </li>
               <li>
-                <span className="text-sm text-muted-foreground">
+                <Link
+                  href="/privacy"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
                   Privacy Policy
-                </span>
+                </Link>
               </li>
             </ul>
           </div>

@@ -129,8 +129,8 @@ export function CartSheet({ open, onClose }: CartSheetProps) {
                 </div>
               </div>
 
-              {/* Footer */}
-              <div className="border-t border-border p-6">
+              {/* Footer - always visible */}
+              <div className="shrink-0 border-t border-border p-6">
                 <div className="flex items-center justify-between text-base font-semibold">
                   <span>Subtotal</span>
                   <span className="tabular-nums">

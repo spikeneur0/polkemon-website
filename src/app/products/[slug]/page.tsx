@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/utils";
 import { CATEGORIES, SITE_URL } from "@/lib/constants";
 import { AddToCartButton } from "@/components/products/add-to-cart-button";
 import { ProductImageGallery } from "@/components/products/product-image-gallery";
+import { ProductTabs } from "@/components/products/product-tabs";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -185,6 +186,9 @@ export default async function ProductPage({ params }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Product Tabs */}
+      <ProductTabs description={product.description} />
 
       {/* Related Products */}
       {relatedProducts.length > 0 && (

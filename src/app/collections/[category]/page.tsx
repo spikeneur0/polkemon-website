@@ -3,9 +3,10 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { ProductGrid } from "@/components/products/product-grid";
-import { CollectionSort } from "@/components/products/collection-sort";
+import { CollectionFilters } from "@/components/products/collection-filters";
 import { CATEGORIES } from "@/lib/constants";
 import type { Metadata } from "next";
+import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +61,12 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
 
 interface Props {
   params: Promise<{ category: string }>;
-  searchParams: Promise<{ sort?: string }>;
+  searchParams: Promise<{
+    sort?: string;
+    inStock?: string;
+    minPrice?: string;
+    maxPrice?: string;
+  }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -81,7 +87,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CollectionPage({ params, searchParams }: Props) {
   const { category } = await params;
-  const { sort } = await searchParams;
+  const { sort, inStock, minPrice, maxPrice } = await searchParams;
 
   const cat = CATEGORIES.find((c) => c.slug === category);
 
@@ -98,8 +104,31 @@ export default async function CollectionPage({ params, searchParams }: Props) {
       break;
   }
 
+  // Build where clause with filters
+  const where: Prisma.ProductWhereInput = {
+    category,
+    isPublished: true,
+  };
+
+  if (inStock === "true") {
+    where.isSoldOut = false;
+  }
+
+  // Price filter (convert dollars to cents)
+  if (minPrice || maxPrice) {
+    where.price = {};
+    if (minPrice) {
+      const minCents = Math.round(parseFloat(minPrice) * 100);
+      if (!isNaN(minCents)) where.price.gte = minCents;
+    }
+    if (maxPrice) {
+      const maxCents = Math.round(parseFloat(maxPrice) * 100);
+      if (!isNaN(maxCents)) where.price.lte = maxCents;
+    }
+  }
+
   const products = await db.product.findMany({
-    where: { category, isPublished: true },
+    where,
     orderBy,
     select: {
       id: true,
@@ -113,8 +142,13 @@ export default async function CollectionPage({ params, searchParams }: Props) {
     },
   });
 
+  // Get total count without filters for display
+  const totalCount = await db.product.count({
+    where: { category, isPublished: true },
+  });
+
   // If category doesn't exist in our constants and has no products, 404
-  if (!cat && products.length === 0) notFound();
+  if (!cat && totalCount === 0) notFound();
 
   const displayName =
     cat?.name ||
@@ -123,6 +157,7 @@ export default async function CollectionPage({ params, searchParams }: Props) {
       .replace(/\b\w/g, (c) => c.toUpperCase());
 
   const description = CATEGORY_DESCRIPTIONS[category] || null;
+  const isFiltered = inStock || minPrice || maxPrice;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -139,28 +174,34 @@ export default async function CollectionPage({ params, searchParams }: Props) {
         <span className="text-foreground">{displayName}</span>
       </nav>
 
-      {/* Header with title, count, and sort */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
-            <span className="rounded-full bg-accent px-3 py-0.5 text-xs font-medium text-muted-foreground">
-              {products.length} {products.length === 1 ? "product" : "products"}
-            </span>
-          </div>
-          {description && (
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {description}
-            </p>
-          )}
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
+          <span className="rounded-full bg-accent px-3 py-0.5 text-xs font-medium text-muted-foreground">
+            {isFiltered
+              ? `${products.length} of ${totalCount}`
+              : `${totalCount} ${totalCount === 1 ? "product" : "products"}`}
+          </span>
         </div>
-        <CollectionSort />
+        {description && (
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            {description}
+          </p>
+        )}
+      </div>
+
+      {/* Filters and Sort */}
+      <div className="mb-6">
+        <CollectionFilters />
       </div>
 
       {products.length === 0 ? (
         <div className="py-16 text-center">
           <p className="text-muted-foreground">
-            No products found in this category yet.
+            {isFiltered
+              ? "No products match your filters. Try adjusting your criteria."
+              : "No products found in this category yet."}
           </p>
         </div>
       ) : (

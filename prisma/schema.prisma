@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  hashedPassword String
+  name           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Product {
+  id            String      @id @default(cuid())
+  name          String
+  slug          String      @unique
+  description   String      @db.Text
+  price         Int // cents
+  compareAtPrice Int?       // cents
+  category      String
+  images        String[]
+  isSoldOut     Boolean     @default(false)
+  isFeatured    Boolean     @default(false)
+  featuredOrder Int?
+  sku           String?
+  quantity      Int         @default(0)
+  tags          String[]
+  isPublished   Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  orderItems OrderItem[]
+
+  @@index([category])
+  @@index([isFeatured])
+  @@index([slug])
+  @@index([isPublished])
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  orderNumber     String        @unique
+  status          OrderStatus   @default(PENDING)
+  customerEmail   String
+  customerName    String
+  shippingAddress Json
+  subtotalCents   Int
+  shippingCents   Int           @default(0)
+  taxCents        Int           @default(0)
+  totalCents      Int
+  stripeSessionId String?       @unique
+  stripePaymentId String?       @unique
+  paymentStatus   PaymentStatus @default(UNPAID)
+  trackingNumber  String?
+  notes           String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  items OrderItem[]
+
+  @@index([customerEmail])
+  @@index([status])
+  @@index([orderNumber])
+  @@index([paymentStatus])
+}
+
+model OrderItem {
+  id          String @id @default(cuid())
+  orderId     String
+  productId   String
+  productName String
+  productSku  String?
+  quantity    Int
+  priceCents  Int
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+}
+
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+  FAILED
+}

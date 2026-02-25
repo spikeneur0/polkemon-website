@@ -1,7 +1,11 @@
 export const SITE_NAME = "Polkemon Trading Co";
 export const SITE_DESCRIPTION =
   "Premium trading cards and accessories from Ann Arbor, Michigan. Pokemon, One Piece, Yu-Gi-Oh, Magic: The Gathering, and more.";
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+export const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000");
 
 export const CATEGORIES = [
   // TCG Categories

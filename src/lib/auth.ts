@@ -41,17 +41,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     strategy: "jwt",
   },
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      const isAdminRoute =
-        nextUrl.pathname.startsWith("/admin") &&
-        !nextUrl.pathname.startsWith("/admin/login");
-
-      if (isAdminRoute && !isLoggedIn) {
-        return Response.redirect(new URL("/admin/login", nextUrl));
+    jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
       }
-
-      return true;
+      return token;
+    },
+    session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
+      }
+      return session;
     },
   },
 });

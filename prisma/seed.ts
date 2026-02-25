@@ -1,10 +1,134 @@
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
+import * as fs from "fs";
+import * as path from "path";
 
 const prisma = new PrismaClient();
 
+// Map scraped category names to our slug system
+const CATEGORY_MAP: Record<string, string> = {
+  "Pokemon TCG": "pokemon",
+  "One Piece TCG": "one-piece",
+  "Magic: The Gathering": "magic-the-gathering",
+  "Yu-Gi-Oh": "yu-gi-oh",
+  Lorcana: "lorcana",
+  "Weiss Schwarz": "weiss-schwarz",
+  Digimon: "digimon",
+  "TCG Supplies": "supplies",
+  "Blind Boxes": "blind-boxes",
+  Figures: "figures",
+  Plush: "plush",
+  Stickers: "stickers",
+  Keychains: "keychains",
+  Clothing: "clothing",
+  "Jewelry & Pins": "jewelry-pins",
+  "Food & Drink": "food-drink",
+  Models: "models",
+  "Pokemon Singles (JP)": "pokemon-singles-jp",
+  "Pokemon Singles (ENG)": "pokemon-singles-eng",
+  "Digimon Singles": "digimon-singles",
+  "Other TCGs": "other-tcgs",
+  Other: "other",
+  "Gift Cards": "gift-cards",
+};
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim()
+    .substring(0, 120); // Keep slugs reasonable length
+}
+
+function parsePrice(priceStr: string): number {
+  // Handle "From $X.XX" format - take the base price
+  const cleaned = priceStr.replace(/^From\s+/i, "").replace("$", "");
+  const num = parseFloat(cleaned);
+  if (isNaN(num)) return 0;
+  return Math.round(num * 100); // Convert to cents
+}
+
+function generateDescription(product: {
+  name: string;
+  category: string;
+}): string {
+  const cat = product.category;
+
+  if (cat === "Pokemon TCG" || cat === "One Piece TCG" || cat === "Lorcana")
+    return `${product.name}. Sealed and authentic product from the ${cat} line. Perfect for collectors and competitive players alike.`;
+
+  if (cat === "Magic: The Gathering")
+    return `${product.name}. Sealed MTG product, perfect for building decks and expanding your collection.`;
+
+  if (cat === "Yu-Gi-Oh")
+    return `${product.name}. Official Yu-Gi-Oh! product. Great for duelists and collectors.`;
+
+  if (cat === "Weiss Schwarz")
+    return `${product.name}. Official Weiss Schwarz product featuring beloved anime characters.`;
+
+  if (cat === "Digimon" || cat === "Digimon Singles")
+    return `${product.name}. Digimon Card Game product for players and collectors.`;
+
+  if (cat === "TCG Supplies")
+    return `${product.name}. Quality TCG accessories to protect and display your card collection.`;
+
+  if (cat === "Blind Boxes")
+    return `${product.name}. Collectible blind box figure. Each box contains a random figure from the series.`;
+
+  if (cat === "Figures")
+    return `${product.name}. Detailed collectible figure for anime and game fans.`;
+
+  if (cat === "Plush")
+    return `${product.name}. Soft and cuddly plush toy, perfect as a gift or collectible.`;
+
+  if (cat === "Models")
+    return `${product.name}. Model kit for building and display. A must-have for hobbyists.`;
+
+  if (cat === "Keychains")
+    return `${product.name}. Stylish keychain accessory featuring popular characters.`;
+
+  if (cat === "Clothing")
+    return `${product.name}. Premium apparel for fans and collectors.`;
+
+  if (cat === "Jewelry & Pins")
+    return `${product.name}. Collectible pin or jewelry piece for fans.`;
+
+  if (cat === "Stickers")
+    return `${product.name}. Decorative sticker for personalizing your gear.`;
+
+  if (cat === "Food & Drink")
+    return `${product.name}. Japanese import snack or drink. Enjoy unique flavors from Japan!`;
+
+  if (
+    cat === "Pokemon Singles (JP)" ||
+    cat === "Pokemon Singles (ENG)"
+  )
+    return `${product.name}. Individual Pokemon trading card. Card condition: Near Mint.`;
+
+  if (cat === "Other TCGs")
+    return `${product.name}. Trading card game product from a popular series.`;
+
+  return `${product.name}. Available at Polkemon Trading Co.`;
+}
+
+// Determine which products to feature (pick top products with images from popular categories)
+const FEATURED_SLUGS = [
+  "pokemon-m2-mega-inferno-jpn",
+  "pokemon-m1s-mega-symphonia-jpn",
+  "one-piece-eb03-jpn",
+  "weiss-schwarz-freiren-beyond-journeys-end",
+  "yu-gi-oh-alliance-insight---booster-pack-1st-edition",
+  "lorcana-whispers-in-the-well",
+  "mtg-bloomburrow-play-booster-pack",
+  "the-monsters-wacky-mart-tumblers",
+];
+
 async function main() {
-  // Create admin user
+  console.log("Starting seed...");
+
+  // 1. Create admin user
   const hashedPassword = await hash("admin123", 12);
   await prisma.adminUser.upsert({
     where: { email: "admin@polkemontradingco.com" },
@@ -15,117 +139,101 @@ async function main() {
       name: "Admin",
     },
   });
+  console.log("Admin user created/verified.");
 
-  // Create sample products
-  const products = [
-    {
-      name: "Pokemon Scarlet & Violet Booster Box",
-      slug: "pokemon-sv-booster-box",
-      description:
-        "Sealed Pokemon Scarlet & Violet base set booster box containing 36 packs. Each pack contains 10 cards.",
-      price: 12999,
-      category: "pokemon",
-      images: [],
-      quantity: 25,
-      tags: ["pokemon", "booster-box", "scarlet-violet"],
-      isFeatured: true,
-      featuredOrder: 1,
-    },
-    {
-      name: "Pokemon 151 Elite Trainer Box",
-      slug: "pokemon-151-etb",
-      description:
-        "Pokemon 151 Elite Trainer Box featuring the original 151 Pokemon. Includes 9 booster packs and accessories.",
-      price: 4999,
-      category: "pokemon",
-      images: [],
-      quantity: 15,
-      tags: ["pokemon", "etb", "151"],
-      isFeatured: true,
-      featuredOrder: 2,
-    },
-    {
-      name: "One Piece TCG OP-09 Booster Box",
-      slug: "one-piece-op09-booster-box",
-      description:
-        "One Piece Trading Card Game OP-09 booster box. 24 packs per box with 12 cards per pack.",
-      price: 10999,
-      category: "one-piece",
-      images: [],
-      quantity: 20,
-      tags: ["one-piece", "booster-box", "op-09"],
-      isFeatured: true,
-      featuredOrder: 3,
-    },
-    {
-      name: "Yu-Gi-Oh! Age of Overlord Booster Box",
-      slug: "yugioh-age-of-overlord",
-      description:
-        "Yu-Gi-Oh! Age of Overlord booster box. 24 packs with 9 cards each. Features powerful new archetypes.",
-      price: 7999,
-      category: "yu-gi-oh",
-      images: [],
-      quantity: 30,
-      tags: ["yu-gi-oh", "booster-box", "age-of-overlord"],
-    },
-    {
-      name: "MTG Murders at Karlov Manor Draft Box",
-      slug: "mtg-karlov-manor-draft",
-      description:
-        "Magic: The Gathering Murders at Karlov Manor draft booster box. 36 packs for the ultimate draft experience.",
-      price: 11999,
-      category: "magic-the-gathering",
-      images: [],
-      quantity: 12,
-      tags: ["mtg", "magic", "booster-box", "karlov-manor"],
-      isFeatured: true,
-      featuredOrder: 4,
-    },
-    {
-      name: "Ultra Pro Card Sleeves (100 count)",
-      slug: "ultra-pro-sleeves-100",
-      description:
-        "Ultra Pro standard size card sleeves. Clear, durable protection for your trading cards. 100 count pack.",
-      price: 799,
-      category: "supplies",
-      images: [],
-      quantity: 100,
-      tags: ["sleeves", "supplies", "ultra-pro"],
-    },
-    {
-      name: "Lorcana The First Chapter Booster Box",
-      slug: "lorcana-first-chapter-booster",
-      description:
-        "Disney Lorcana The First Chapter booster box. 24 packs of 12 cards each.",
-      price: 14999,
-      category: "lorcana",
-      images: [],
-      quantity: 0,
-      isSoldOut: true,
-      tags: ["lorcana", "disney", "booster-box", "first-chapter"],
-    },
-    {
-      name: "Weiss Schwarz Hololive Booster Box",
-      slug: "weiss-schwarz-hololive",
-      description:
-        "Weiss Schwarz Hololive Production booster box. Features your favorite VTubers in card form.",
-      price: 6999,
-      category: "weiss-schwarz",
-      images: [],
-      quantity: 8,
-      tags: ["weiss-schwarz", "hololive", "booster-box"],
-    },
-  ];
+  // 2. Read ginza-products.json
+  const jsonPath = path.join(__dirname, "..", "ginza-products.json");
+  const rawData = fs.readFileSync(jsonPath, "utf-8");
+  const data = JSON.parse(rawData);
+  const products: Array<{
+    name: string;
+    price: string;
+    category: string;
+    sold_out: boolean;
+    image: string | null;
+    variants?: string[];
+  }> = data.products;
 
-  for (const product of products) {
-    await prisma.product.upsert({
-      where: { slug: product.slug },
-      update: {},
-      create: product,
-    });
+  console.log(`Found ${products.length} products to seed.`);
+
+  // 3. Delete existing products (clean slate)
+  await prisma.orderItem.deleteMany({});
+  await prisma.order.deleteMany({});
+  await prisma.product.deleteMany({});
+  console.log("Cleared existing products and orders.");
+
+  // 4. Seed all products
+  const slugTracker = new Map<string, number>();
+  let seededCount = 0;
+  let featuredOrder = 1;
+
+  for (const p of products) {
+    // Skip products with $0 price
+    const priceCents = parsePrice(p.price);
+    if (priceCents === 0) continue;
+
+    // Generate unique slug
+    let baseSlug = slugify(p.name);
+    if (!baseSlug) baseSlug = `product-${seededCount}`;
+
+    const count = slugTracker.get(baseSlug) || 0;
+    slugTracker.set(baseSlug, count + 1);
+    const slug = count > 0 ? `${baseSlug}-${count}` : baseSlug;
+
+    // Map category
+    const category = CATEGORY_MAP[p.category] || "other";
+
+    // Build images array
+    const images: string[] = [];
+    if (p.image) {
+      images.push(p.image);
+    }
+
+    // Check if this should be featured
+    const isFeatured = FEATURED_SLUGS.includes(slug);
+    const currentFeaturedOrder = isFeatured ? featuredOrder++ : undefined;
+
+    // Determine quantity (sold out = 0, otherwise random stock)
+    const quantity = p.sold_out ? 0 : Math.floor(Math.random() * 30) + 1;
+
+    // Build tags from category and name keywords
+    const tags: string[] = [category];
+    if (p.name.toLowerCase().includes("booster")) tags.push("booster");
+    if (p.name.toLowerCase().includes("box")) tags.push("box");
+    if (p.name.toLowerCase().includes("pack")) tags.push("pack");
+    if (p.name.toLowerCase().includes("deck")) tags.push("deck");
+    if (p.name.toLowerCase().includes("sleeves")) tags.push("sleeves");
+    if (p.name.toLowerCase().includes("dragon shield"))
+      tags.push("dragon-shield");
+    if (p.name.toLowerCase().includes("nendoroid")) tags.push("nendoroid");
+    if (p.name.toLowerCase().includes("plush")) tags.push("plush");
+    if (p.name.toLowerCase().includes("blind box")) tags.push("blind-box");
+
+    try {
+      await prisma.product.create({
+        data: {
+          name: p.name,
+          slug,
+          description: generateDescription(p),
+          price: priceCents,
+          category,
+          images,
+          isSoldOut: p.sold_out,
+          isFeatured,
+          featuredOrder: currentFeaturedOrder,
+          quantity,
+          tags,
+          isPublished: true,
+        },
+      });
+      seededCount++;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Failed to seed "${p.name}" (slug: ${slug}): ${msg}`);
+    }
   }
 
-  console.log("Seed completed successfully");
+  console.log(`\nSeed completed! ${seededCount} products created.`);
 }
 
 main()

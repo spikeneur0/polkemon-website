@@ -3,10 +3,26 @@ import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
-import { CATEGORIES, SITE_NAME } from "@/lib/constants";
+import { SITE_NAME } from "@/lib/constants";
 import { NewsletterSignup } from "@/components/home/newsletter-signup";
 
 export const dynamic = "force-dynamic";
+
+const HOMEPAGE_CATEGORIES = [
+  { slug: "pokemon", name: "Pokemon TCG", icon: "⚡", color: "#dc6b2f" },
+  { slug: "one-piece", name: "One Piece TCG", icon: "🏴‍☠️", color: "#b91c1c" },
+  { slug: "yu-gi-oh", name: "Yu-Gi-Oh", icon: "🃏", color: "#7c3aed" },
+  {
+    slug: "magic-the-gathering",
+    name: "Magic: The Gathering",
+    icon: "🔮",
+    color: "#1d4ed8",
+  },
+  { slug: "weiss-schwarz", name: "Weiss Schwarz", icon: "🎌", color: "#0d9488" },
+  { slug: "lorcana", name: "Lorcana", icon: "✨", color: "#4f46e5" },
+  { slug: "blind-boxes", name: "Blind Boxes", icon: "🎁", color: "#c026d3" },
+  { slug: "figures", name: "Figures & More", icon: "🎭", color: "#475569" },
+];
 
 export default async function HomePage() {
   const featuredProducts = await db.product.findMany({
@@ -137,18 +153,29 @@ export default async function HomePage() {
       {/* Collection Tiles */}
       <section className="bg-accent/50">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold tracking-tight">
-            Shop by Category
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold tracking-tight">
+              Shop by Category
+            </h2>
+            <Link
+              href="/products"
+              className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              View all
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
           <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-            {CATEGORIES.slice(0, 8).map((cat) => (
+            {HOMEPAGE_CATEGORIES.map((cat) => (
               <Link
                 key={cat.slug}
                 href={`/collections/${cat.slug}`}
-                className="group relative flex h-40 items-end overflow-hidden rounded-lg bg-gradient-to-t from-foreground/80 to-foreground/20 p-4 transition-shadow hover:shadow-lg sm:h-48"
+                className="group relative flex h-40 items-end overflow-hidden rounded-lg p-4 transition-shadow hover:shadow-lg sm:h-48"
+                style={{ backgroundColor: cat.color }}
               >
-                <div>
-                  <h3 className="text-base font-semibold text-white sm:text-lg">
+                <div className="relative z-10">
+                  <span className="text-2xl">{cat.icon}</span>
+                  <h3 className="mt-1 text-base font-semibold text-white sm:text-lg">
                     {cat.name}
                   </h3>
                   <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-white/80 transition-colors group-hover:text-white">
@@ -156,6 +183,7 @@ export default async function HomePage() {
                     <ArrowRight className="h-3 w-3" />
                   </span>
                 </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
               </Link>
             ))}
           </div>

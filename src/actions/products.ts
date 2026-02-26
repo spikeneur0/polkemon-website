@@ -82,12 +82,22 @@ export async function updateProduct(id: string, formData: FormData) {
     : [];
   const images = imagesStr ? JSON.parse(imagesStr) : [];
 
+  // Check if market pricing is active — don't overwrite the synced price
+  const existing = await db.product.findUnique({
+    where: { id },
+    select: { marketPriceEnabled: true },
+  });
+
+  const priceData = existing?.marketPriceEnabled
+    ? { manualPrice: price } // Save as fallback only
+    : { price }; // Normal: set product.price directly
+
   await db.product.update({
     where: { id },
     data: {
       name,
       description,
-      price,
+      ...priceData,
       compareAtPrice,
       category,
       sku: sku || null,

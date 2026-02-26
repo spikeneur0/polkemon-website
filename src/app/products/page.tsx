@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { ProductGrid } from "@/components/products/product-grid";
+import { getShowLiveBadge } from "@/lib/settings-helpers";
 import { ProductFilters } from "@/components/products/product-filters";
 import { ProductSearch } from "@/components/products/product-search";
 import type { Metadata } from "next";
@@ -69,7 +70,7 @@ export default async function ProductsPage({ searchParams }: Props) {
       break;
   }
 
-  const [products, totalCount] = await Promise.all([
+  const [products, totalCount, showLiveBadge] = await Promise.all([
     db.product.findMany({
       where,
       orderBy,
@@ -84,9 +85,11 @@ export default async function ProductsPage({ searchParams }: Props) {
         images: true,
         isSoldOut: true,
         category: true,
+        marketPriceEnabled: true,
       },
     }),
     db.product.count({ where }),
+    getShowLiveBadge(),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PRODUCTS_PER_PAGE));
@@ -125,7 +128,7 @@ export default async function ProductsPage({ searchParams }: Props) {
         <ProductFilters />
       </Suspense>
       <div className="mt-8">
-        <ProductGrid products={products} />
+        <ProductGrid products={products} showLiveBadge={showLiveBadge} />
       </div>
 
       {/* Pagination */}

@@ -6,6 +6,7 @@ import {
   Star,
   Users,
   ArrowLeft,
+  Settings,
 } from "lucide-react";
 
 const adminNav = [
@@ -14,6 +15,7 @@ const adminNav = [
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { href: "/admin/featured", label: "Featured", icon: Star },
   { href: "/admin/subscribers", label: "Subscribers", icon: Users },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export default function AdminLayout({

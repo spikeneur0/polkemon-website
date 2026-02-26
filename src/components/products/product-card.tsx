@@ -16,6 +16,8 @@ interface ProductCardProps {
   image?: string;
   isSoldOut?: boolean;
   category?: string;
+  marketPriceEnabled?: boolean;
+  showLiveBadge?: boolean;
 }
 
 export function ProductCard({
@@ -26,6 +28,8 @@ export function ProductCard({
   compareAtPrice,
   image,
   isSoldOut,
+  marketPriceEnabled,
+  showLiveBadge,
 }: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem);
   const { toast } = useToast();
@@ -91,6 +95,11 @@ export function ProductCard({
             <p className="text-xs text-muted-foreground line-through tabular-nums">
               {formatPrice(compareAtPrice)}
             </p>
+          )}
+          {marketPriceEnabled && showLiveBadge && (
+            <span className="inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700">
+              Live
+            </span>
           )}
         </div>
       </div>

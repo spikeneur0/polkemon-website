@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { ProductGrid } from "@/components/products/product-grid";
 import { CollectionFilters } from "@/components/products/collection-filters";
 import { CATEGORIES } from "@/lib/constants";
+import { getShowLiveBadge } from "@/lib/settings-helpers";
 import type { Metadata } from "next";
 import type { Prisma } from "@prisma/client";
 
@@ -135,8 +136,11 @@ export default async function CollectionPage({ params, searchParams }: Props) {
       images: true,
       isSoldOut: true,
       category: true,
+      marketPriceEnabled: true,
     },
   });
+
+  const showLiveBadge = await getShowLiveBadge();
 
   // Get total count without filters for display
   const totalCount = await db.product.count({
@@ -201,7 +205,7 @@ export default async function CollectionPage({ params, searchParams }: Props) {
           </p>
         </div>
       ) : (
-        <ProductGrid products={products} />
+        <ProductGrid products={products} showLiveBadge={showLiveBadge} />
       )}
     </div>
   );

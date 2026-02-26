@@ -9,13 +9,15 @@ interface Product {
   images: string[];
   isSoldOut: boolean;
   category: string;
+  marketPriceEnabled?: boolean;
 }
 
 interface ProductGridProps {
   products: Product[];
+  showLiveBadge?: boolean;
 }
 
-export function ProductGrid({ products }: ProductGridProps) {
+export function ProductGrid({ products, showLiveBadge }: ProductGridProps) {
   if (products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -37,6 +39,8 @@ export function ProductGrid({ products }: ProductGridProps) {
           image={product.images[0]}
           isSoldOut={product.isSoldOut}
           category={product.category}
+          marketPriceEnabled={product.marketPriceEnabled}
+          showLiveBadge={showLiveBadge}
         />
       ))}
     </div>

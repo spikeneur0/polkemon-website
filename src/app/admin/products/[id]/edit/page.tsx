@@ -7,6 +7,7 @@ import { uploadImage, deleteImage } from "@/actions/upload";
 import { CATEGORIES } from "@/lib/constants";
 import { X, Upload, Trash2 } from "lucide-react";
 import Image from "next/image";
+import MarketPricingSection from "@/components/admin/market-pricing-section";
 
 interface Product {
   id: string;
@@ -21,6 +22,17 @@ interface Product {
   images: string[];
   isSoldOut: boolean;
   isPublished: boolean;
+  // Market pricing fields
+  marketPriceEnabled: boolean;
+  marketPrice: number | null;
+  marketPriceLastUpdated: string | null;
+  marketPriceMarkup: number;
+  marketPriceCondition: string;
+  marketPricePrinting: string;
+  justTcgId: string | null;
+  tcgplayerId: string | null;
+  linkedCardName: string | null;
+  manualPrice: number | null;
 }
 
 export default function EditProductPage() {
@@ -31,6 +43,7 @@ export default function EditProductPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [marketPriceActive, setMarketPriceActive] = useState(false);
 
   useEffect(() => {
     fetch(`/api/admin/products/${params.id}`)
@@ -38,6 +51,7 @@ export default function EditProductPage() {
       .then((data) => {
         setProduct(data);
         setImages(data.images || []);
+        setMarketPriceActive(data.marketPriceEnabled || false);
         setLoading(false);
       });
   }, [params.id]);
@@ -116,6 +130,11 @@ export default function EditProductPage() {
     );
   }
 
+  // Show manual price (fallback) when market pricing is active
+  const displayPrice = marketPriceActive && product.manualPrice != null
+    ? product.manualPrice
+    : product.price;
+
   return (
     <div className="p-6 lg:p-8">
       <div className="flex items-center justify-between">
@@ -152,16 +171,24 @@ export default function EditProductPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium">Price ($)</label>
+          <div className={marketPriceActive ? "opacity-50" : ""}>
+            <label className="block text-sm font-medium">
+              Price ($)
+              {marketPriceActive && (
+                <span className="ml-2 text-xs font-normal text-green-600">
+                  Managed by market sync
+                </span>
+              )}
+            </label>
             <input
               name="price"
               type="number"
               step="0.01"
               min="0"
               required
-              defaultValue={(product.price / 100).toFixed(2)}
-              className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              disabled={marketPriceActive}
+              defaultValue={(displayPrice / 100).toFixed(2)}
+              className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:bg-muted"
             />
           </div>
           <div>
@@ -182,6 +209,24 @@ export default function EditProductPage() {
             />
           </div>
         </div>
+
+        {/* Market Pricing Section */}
+        <MarketPricingSection
+          productId={product.id}
+          initialData={{
+            marketPriceEnabled: product.marketPriceEnabled,
+            marketPrice: product.marketPrice,
+            marketPriceLastUpdated: product.marketPriceLastUpdated,
+            marketPriceMarkup: Number(product.marketPriceMarkup) || 0,
+            marketPriceCondition: product.marketPriceCondition || "Near Mint",
+            marketPricePrinting: product.marketPricePrinting || "Holofoil",
+            justTcgId: product.justTcgId,
+            tcgplayerId: product.tcgplayerId,
+            linkedCardName: product.linkedCardName,
+            manualPrice: product.manualPrice,
+          }}
+          onMarketPriceToggle={(enabled) => setMarketPriceActive(enabled)}
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <div>

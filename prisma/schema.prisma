@@ -35,12 +35,25 @@ model Product {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
+  // Market Pricing
+  marketPriceEnabled     Boolean   @default(false)
+  marketPrice            Int?      // last fetched market price in cents
+  marketPriceLastUpdated DateTime?
+  marketPriceMarkup      Decimal   @default(0) @db.Decimal(5, 2)
+  marketPriceCondition   String    @default("Near Mint")
+  marketPricePrinting    String    @default("Holofoil")
+  manualPrice            Int?      // preserved manual price for fallback (cents)
+  tcgplayerId            String?
+  justTcgId              String?
+  linkedCardName         String?   // display name of linked card
+
   orderItems OrderItem[]
 
   @@index([category])
   @@index([isFeatured])
   @@index([slug])
   @@index([isPublished])
+  @@index([marketPriceEnabled])
 }
 
 model Order {
@@ -115,4 +128,40 @@ enum PaymentStatus {
   PAID
   REFUNDED
   FAILED
+}
+
+// Market Pricing
+
+model SiteSettings {
+  id                          String   @id @default("default")
+  marketPriceMasterEnabled    Boolean  @default(false)
+  marketPriceDefaultMarkup    Decimal  @default(0) @db.Decimal(5, 2)
+  marketPriceDefaultCondition String   @default("Near Mint")
+  marketPriceSyncFrequency    String   @default("24h")
+  marketPriceShowBadge        Boolean  @default(true)
+  updatedAt                   DateTime @updatedAt
+}
+
+model MarketPriceSyncLog {
+  id            String    @id @default(cuid())
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  totalProducts Int       @default(0)
+  successCount  Int       @default(0)
+  errorCount    Int       @default(0)
+  errors        Json?
+  apiCallsUsed  Int       @default(0)
+  triggeredBy   String    @default("cron") // "cron", "manual", "single"
+
+  @@index([startedAt])
+}
+
+model MarketPriceApiUsage {
+  id                    String   @id @default("default")
+  dailyCalls            Int      @default(0)
+  monthlyCalls          Int      @default(0)
+  dailyResetAt          DateTime @default(now())
+  monthlyResetAt        DateTime @default(now())
+  lastApiCallsRemaining Int?
+  updatedAt             DateTime @updatedAt
 }

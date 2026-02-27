@@ -3,6 +3,12 @@
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { computeEffectivePrice } from "@/lib/services/marketPriceSync";
+import { auth } from "@/lib/auth";
+
+async function requireAdmin() {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+}
 
 export async function enableMarketPricing(
   productId: string,
@@ -16,6 +22,7 @@ export async function enableMarketPricing(
     linkedCardName: string;
   }
 ) {
+  await requireAdmin();
   const product = await db.product.findUnique({ where: { id: productId } });
   if (!product) return { success: false, error: "Product not found" };
 
@@ -43,6 +50,7 @@ export async function enableMarketPricing(
 }
 
 export async function disableMarketPricing(productId: string) {
+  await requireAdmin();
   const product = await db.product.findUnique({ where: { id: productId } });
   if (!product) return { success: false, error: "Product not found" };
 
@@ -67,6 +75,7 @@ export async function updateMarketPricingFields(
     markup?: number;
   }
 ) {
+  await requireAdmin();
   const product = await db.product.findUnique({ where: { id: productId } });
   if (!product) return { success: false, error: "Product not found" };
 
@@ -98,6 +107,7 @@ export async function linkCard(
   tcgplayerId: string | null,
   linkedCardName: string
 ) {
+  await requireAdmin();
   await db.product.update({
     where: { id: productId },
     data: {
@@ -112,6 +122,7 @@ export async function linkCard(
 }
 
 export async function unlinkCard(productId: string) {
+  await requireAdmin();
   const product = await db.product.findUnique({ where: { id: productId } });
   if (!product) return { success: false, error: "Product not found" };
 

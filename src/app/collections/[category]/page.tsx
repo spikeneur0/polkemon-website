@@ -9,7 +9,7 @@ import { getShowLiveBadge } from "@/lib/settings-helpers";
 import type { Metadata } from "next";
 import type { Prisma } from "@prisma/client";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   pokemon:

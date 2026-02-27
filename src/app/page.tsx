@@ -6,7 +6,7 @@ import { formatPrice } from "@/lib/utils";
 import { SITE_NAME } from "@/lib/constants";
 import { NewsletterSignup } from "@/components/home/newsletter-signup";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const HOMEPAGE_CATEGORIES = [
   { slug: "pokemon", name: "Pokemon TCG", icon: "⚡", color: "#dc6b2f" },

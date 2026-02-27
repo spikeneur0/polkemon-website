@@ -3,8 +3,15 @@
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import { auth } from "@/lib/auth";
+
+async function requireAdmin() {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+}
 
 export async function createProduct(formData: FormData) {
+  await requireAdmin();
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
   const priceStr = formData.get("price") as string;
@@ -57,6 +64,7 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function updateProduct(id: string, formData: FormData) {
+  await requireAdmin();
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
   const priceStr = formData.get("price") as string;
@@ -117,6 +125,7 @@ export async function updateProduct(id: string, formData: FormData) {
 }
 
 export async function deleteProduct(id: string) {
+  await requireAdmin();
   await db.product.delete({ where: { id } });
   revalidatePath("/products");
   revalidatePath("/admin/products");
@@ -125,6 +134,7 @@ export async function deleteProduct(id: string) {
 }
 
 export async function toggleSoldOut(id: string) {
+  await requireAdmin();
   const product = await db.product.findUnique({ where: { id } });
   if (!product) return { success: false };
 
@@ -140,6 +150,7 @@ export async function toggleSoldOut(id: string) {
 }
 
 export async function togglePublished(id: string) {
+  await requireAdmin();
   const product = await db.product.findUnique({ where: { id } });
   if (!product) return { success: false };
 

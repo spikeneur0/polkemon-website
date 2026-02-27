@@ -7,7 +7,7 @@ import { ProductFilters } from "@/components/products/product-filters";
 import { ProductSearch } from "@/components/products/product-search";
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const PRODUCTS_PER_PAGE = 24;
 

@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       where: { id: { in: productIds }, isPublished: true },
     });
 
-    // Validate all products exist and none are sold out
+    // Validate all products exist, none are sold out, and have enough stock
     for (const item of items) {
       const product = products.find((p) => p.id === item.productId);
       if (!product) {
@@ -32,6 +32,14 @@ export async function POST(req: Request) {
       if (product.isSoldOut) {
         return NextResponse.json(
           { error: `Product is sold out: ${product.name}` },
+          { status: 400 }
+        );
+      }
+      if (product.quantity < item.quantity) {
+        return NextResponse.json(
+          {
+            error: `Not enough stock for ${product.name}. Only ${product.quantity} available.`,
+          },
           { status: 400 }
         );
       }

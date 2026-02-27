@@ -2,8 +2,11 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { auth } from "@/lib/auth";
 
 export async function updateFeaturedProducts(productIds: string[]) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
   // Unflag all currently featured products
   await db.product.updateMany({
     where: { isFeatured: true },

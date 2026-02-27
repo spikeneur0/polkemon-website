@@ -2,8 +2,15 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { auth } from "@/lib/auth";
+
+async function requireAdmin() {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+}
 
 export async function getSettings() {
+  await requireAdmin();
   let settings = await db.siteSettings.findUnique({ where: { id: "default" } });
   if (!settings) {
     settings = await db.siteSettings.create({ data: { id: "default" } });
@@ -21,6 +28,7 @@ export async function updateSettings(data: {
   marketPriceSyncFrequency?: string;
   marketPriceShowBadge?: boolean;
 }) {
+  await requireAdmin();
   await db.siteSettings.upsert({
     where: { id: "default" },
     create: { id: "default", ...data },
@@ -32,6 +40,7 @@ export async function updateSettings(data: {
 }
 
 export async function bulkEnableMarketPricing() {
+  await requireAdmin();
   // Enable market pricing for all products that have a linked card
   const result = await db.product.updateMany({
     where: {
@@ -49,6 +58,7 @@ export async function bulkEnableMarketPricing() {
 }
 
 export async function bulkDisableMarketPricing() {
+  await requireAdmin();
   // First, restore manual prices for all market-priced products
   const products = await db.product.findMany({
     where: { marketPriceEnabled: true },
@@ -74,6 +84,7 @@ export async function bulkDisableMarketPricing() {
 }
 
 export async function getSyncLogs(limit = 50) {
+  await requireAdmin();
   return db.marketPriceSyncLog.findMany({
     take: limit,
     orderBy: { startedAt: "desc" },

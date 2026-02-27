@@ -63,39 +63,42 @@ export async function POST(req: Request) {
       0
     );
 
-    await db.order.create({
-      data: {
-        orderNumber: generateOrderNumber(),
-        status: "CONFIRMED",
-        customerEmail: customerDetails?.email || "",
-        customerName: shippingDetails?.name || customerDetails?.name || "",
-        shippingAddress,
-        subtotalCents,
-        totalCents: session.amount_total || subtotalCents,
-        stripeSessionId: session.id,
-        stripePaymentId: session.payment_intent as string,
-        paymentStatus: "PAID",
-        items: {
-          create: productData.map((item) => ({
-            productId: item.productId,
-            productName: item.name,
-            productSku: item.sku,
-            quantity: item.quantity,
-            priceCents: item.price,
-          })),
-        },
-      },
-    });
-
-    // Decrement inventory
-    for (const item of productData) {
-      await db.product.update({
-        where: { id: item.productId },
+    // Use transaction to ensure order creation and inventory decrement are atomic
+    await db.$transaction(async (tx) => {
+      await tx.order.create({
         data: {
-          quantity: { decrement: item.quantity },
+          orderNumber: generateOrderNumber(),
+          status: "CONFIRMED",
+          customerEmail: customerDetails?.email || "",
+          customerName: shippingDetails?.name || customerDetails?.name || "",
+          shippingAddress,
+          subtotalCents,
+          totalCents: session.amount_total || subtotalCents,
+          stripeSessionId: session.id,
+          stripePaymentId: session.payment_intent as string,
+          paymentStatus: "PAID",
+          items: {
+            create: productData.map((item) => ({
+              productId: item.productId,
+              productName: item.name,
+              productSku: item.sku,
+              quantity: item.quantity,
+              priceCents: item.price,
+            })),
+          },
         },
       });
-    }
+
+      // Decrement inventory atomically within the same transaction
+      for (const item of productData) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            quantity: { decrement: item.quantity },
+          },
+        });
+      }
+    });
   }
 
   if (event.type === "charge.refunded") {

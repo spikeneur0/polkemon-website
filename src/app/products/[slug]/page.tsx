@@ -10,7 +10,7 @@ import { ProductImageGallery } from "@/components/products/product-image-gallery
 import { ProductTabs } from "@/components/products/product-tabs";
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 interface Props {
   params: Promise<{ slug: string }>;

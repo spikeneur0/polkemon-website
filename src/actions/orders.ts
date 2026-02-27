@@ -3,8 +3,15 @@
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import type { OrderStatus } from "@prisma/client";
+import { auth } from "@/lib/auth";
+
+async function requireAdmin() {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+}
 
 export async function updateOrderStatus(id: string, status: OrderStatus) {
+  await requireAdmin();
   await db.order.update({
     where: { id },
     data: { status },
@@ -16,6 +23,7 @@ export async function updateOrderStatus(id: string, status: OrderStatus) {
 }
 
 export async function updateTrackingNumber(id: string, trackingNumber: string) {
+  await requireAdmin();
   await db.order.update({
     where: { id },
     data: { trackingNumber },
@@ -26,6 +34,7 @@ export async function updateTrackingNumber(id: string, trackingNumber: string) {
 }
 
 export async function addOrderNote(id: string, notes: string) {
+  await requireAdmin();
   await db.order.update({
     where: { id },
     data: { notes },

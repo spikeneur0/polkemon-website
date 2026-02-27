@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -8,6 +9,7 @@ import {
   ArrowLeft,
   Settings,
 } from "lucide-react";
+import { auth } from "@/lib/auth";
 
 const adminNav = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -18,11 +20,15 @@ const adminNav = [
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/admin/login");
+  }
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}

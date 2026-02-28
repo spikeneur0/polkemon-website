@@ -68,7 +68,7 @@ export default function AdminLoginPage() {
               type="email"
               required
               className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="admin@polkemontradingco.com"
+              placeholder="you@example.com"
             />
           </div>
           <div>

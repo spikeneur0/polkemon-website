@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { sendContactNotification } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -30,6 +31,18 @@ export async function POST(request: Request) {
         message: message.trim(),
       },
     });
+
+    // Send notification email to admin (don't fail the response if email fails)
+    try {
+      await sendContactNotification({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        subject: subject || "General Inquiry",
+        message: message.trim(),
+      });
+    } catch (emailError) {
+      console.error("Failed to send contact notification email:", emailError);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

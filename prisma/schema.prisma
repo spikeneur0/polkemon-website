@@ -54,6 +54,7 @@ model Product {
   @@index([slug])
   @@index([isPublished])
   @@index([marketPriceEnabled])
+  @@index([isPublished, isFeatured])
 }
 
 model Order {
@@ -66,6 +67,8 @@ model Order {
   subtotalCents   Int
   shippingCents   Int           @default(0)
   taxCents        Int           @default(0)
+  discountCents   Int           @default(0)
+  promoCode       String?
   totalCents      Int
   stripeSessionId String?       @unique
   stripePaymentId String?       @unique
@@ -81,6 +84,7 @@ model Order {
   @@index([status])
   @@index([orderNumber])
   @@index([paymentStatus])
+  @@index([createdAt])
 }
 
 model OrderItem {
@@ -93,9 +97,26 @@ model OrderItem {
   priceCents  Int
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
+}
+
+model PromoCode {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  discountType  String    // "percentage" or "fixed"
+  discountValue Int       // percentage (e.g. 10 = 10%) or cents (e.g. 500 = $5.00)
+  minOrderCents Int?      // minimum order amount to apply
+  maxUses       Int?      // null = unlimited
+  currentUses   Int       @default(0)
+  isActive      Boolean   @default(true)
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([code])
+  @@index([isActive])
 }
 
 model Subscriber {

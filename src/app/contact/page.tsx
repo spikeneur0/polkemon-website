@@ -51,7 +51,9 @@ export default function ContactPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               {SITE_NAME}
               <br />
-              Ann Arbor, MI
+              315 E Eisenhower Pkwy, STE 9B
+              <br />
+              Ann Arbor, MI 48108
               <br />
               United States
             </p>

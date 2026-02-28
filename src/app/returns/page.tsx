@@ -71,9 +71,14 @@ export default function ReturnsPage() {
                 authorization number (RMA) and shipping instructions.
               </li>
               <li>
-                Ship the item back to us using a trackable shipping method. Return
-                shipping costs are the responsibility of the customer unless the
-                return is due to our error.
+                Ship the item back to us using a trackable shipping method at:
+                <br />
+                <strong className="text-foreground">
+                  Polkemon Trading Co, 315 E Eisenhower Pkwy, STE 9B, Ann Arbor, MI 48108
+                </strong>
+                <br />
+                Return shipping costs are the responsibility of the customer
+                unless the return is due to our error.
               </li>
               <li>
                 Once we receive and inspect the returned item, we will process

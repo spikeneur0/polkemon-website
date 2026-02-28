@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Toaster } from "@/components/ui/toaster";
 import { BackToTop } from "@/components/layout/back-to-top";
+import { CookieConsent } from "@/components/layout/cookie-consent";
 import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
 
 const inter = Inter({
@@ -62,6 +63,7 @@ export default function RootLayout({
         <Footer />
         <Toaster />
         <BackToTop />
+        <CookieConsent />
       </body>
     </html>
   );

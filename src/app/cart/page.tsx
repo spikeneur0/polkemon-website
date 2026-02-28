@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, X, Tag } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { formatPrice } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -18,11 +18,24 @@ interface FeaturedProduct {
   category: string;
 }
 
+interface AppliedPromo {
+  code: string;
+  discountType: string;
+  discountValue: number;
+  discountCents: number;
+}
+
 export default function CartPage() {
   const { items, removeItem, updateQuantity, subtotal, clearCart } =
     useCartStore();
   const [loading, setLoading] = useState(false);
   const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([]);
+
+  // Promo code state
+  const [promoInput, setPromoInput] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -35,6 +48,73 @@ export default function CartPage() {
     }
   }, [items.length]);
 
+  // Re-validate promo when subtotal changes (items added/removed/quantity changed)
+  useEffect(() => {
+    if (!appliedPromo) return;
+    const currentSubtotal = subtotal();
+    if (currentSubtotal === 0) {
+      setAppliedPromo(null);
+      return;
+    }
+    // Re-calculate discount for new subtotal
+    let newDiscountCents: number;
+    if (appliedPromo.discountType === "percentage") {
+      newDiscountCents = Math.round(
+        (currentSubtotal * appliedPromo.discountValue) / 100
+      );
+    } else {
+      newDiscountCents = appliedPromo.discountValue;
+    }
+    newDiscountCents = Math.min(newDiscountCents, currentSubtotal);
+    if (newDiscountCents !== appliedPromo.discountCents) {
+      setAppliedPromo({ ...appliedPromo, discountCents: newDiscountCents });
+    }
+  }, [subtotal, items, appliedPromo]);
+
+  async function handleApplyPromo() {
+    const code = promoInput.trim();
+    if (!code) return;
+
+    setPromoLoading(true);
+    setPromoError(null);
+
+    try {
+      const res = await fetch("/api/promo/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          subtotalCents: subtotal(),
+        }),
+      });
+      const data = await res.json();
+
+      if (data.valid) {
+        setAppliedPromo({
+          code: code.toUpperCase(),
+          discountType: data.discountType,
+          discountValue: data.discountValue,
+          discountCents: data.discountCents,
+        });
+        setPromoError(null);
+        setPromoInput("");
+      } else {
+        setPromoError(data.error || "Invalid promo code");
+        setAppliedPromo(null);
+      }
+    } catch {
+      setPromoError("Failed to validate promo code. Please try again.");
+    } finally {
+      setPromoLoading(false);
+    }
+  }
+
+  function handleRemovePromo() {
+    setAppliedPromo(null);
+    setPromoError(null);
+    setPromoInput("");
+  }
+
   async function handleCheckout() {
     setLoading(true);
     try {
@@ -46,11 +126,14 @@ export default function CartPage() {
             productId: i.productId,
             quantity: i.quantity,
           })),
+          promoCode: appliedPromo?.code || null,
         }),
       });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
+      } else if (data.error) {
+        alert(data.error);
       }
     } catch {
       alert("Something went wrong. Please try again.");
@@ -129,6 +212,10 @@ export default function CartPage() {
     );
   }
 
+  const currentSubtotal = subtotal();
+  const discountCents = appliedPromo?.discountCents ?? 0;
+  const totalAfterDiscount = currentSubtotal - discountCents;
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <h1 className="text-2xl font-bold tracking-tight">Shopping Cart</h1>
@@ -152,7 +239,7 @@ export default function CartPage() {
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-2xl text-muted-foreground/30">
-                      🃏
+                      &#x1F0CF;
                     </div>
                   )}
                 </div>
@@ -223,9 +310,20 @@ export default function CartPage() {
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span className="font-medium tabular-nums">
-                  {formatPrice(subtotal())}
+                  {formatPrice(currentSubtotal)}
                 </span>
               </div>
+              {appliedPromo && (
+                <div className="flex justify-between text-sm">
+                  <span className="flex items-center gap-1 text-green-600">
+                    <Tag className="h-3.5 w-3.5" />
+                    Discount ({appliedPromo.code})
+                  </span>
+                  <span className="font-medium tabular-nums text-green-600">
+                    -{formatPrice(discountCents)}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Shipping</span>
                 <span className="text-muted-foreground">Calculated at checkout</span>
@@ -233,7 +331,7 @@ export default function CartPage() {
               <div className="h-px bg-border" />
               <div className="flex justify-between text-base font-semibold">
                 <span>Total</span>
-                <span className="tabular-nums">{formatPrice(subtotal())}</span>
+                <span className="tabular-nums">{formatPrice(totalAfterDiscount)}</span>
               </div>
             </div>
             <button
@@ -254,19 +352,62 @@ export default function CartPage() {
           {/* Promo Code */}
           <div className="rounded-lg border border-border p-6">
             <h3 className="text-sm font-semibold">Promo Code</h3>
-            <div className="mt-3 flex gap-2">
-              <input
-                type="text"
-                placeholder="Enter code"
-                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <button className="rounded-md border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent">
-                Apply
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Promo codes are applied at checkout
-            </p>
+            {appliedPromo ? (
+              <div className="mt-3">
+                <div className="flex items-center justify-between rounded-md border border-green-200 bg-green-50 px-3 py-2 dark:border-green-800 dark:bg-green-950">
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                      {appliedPromo.code}
+                    </span>
+                    <span className="text-xs text-green-600 dark:text-green-500">
+                      {appliedPromo.discountType === "percentage"
+                        ? `${appliedPromo.discountValue}% off`
+                        : `${formatPrice(appliedPromo.discountValue)} off`}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleRemovePromo}
+                    className="rounded p-0.5 text-green-600 transition-colors hover:bg-green-100 hover:text-green-800 dark:hover:bg-green-900"
+                    aria-label="Remove promo code"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-green-600 dark:text-green-500">
+                  You save {formatPrice(discountCents)} on this order!
+                </p>
+              </div>
+            ) : (
+              <div className="mt-3">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={promoInput}
+                    onChange={(e) => {
+                      setPromoInput(e.target.value);
+                      if (promoError) setPromoError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleApplyPromo();
+                    }}
+                    placeholder="Enter code"
+                    disabled={promoLoading}
+                    className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleApplyPromo}
+                    disabled={promoLoading || !promoInput.trim()}
+                    className="rounded-md border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-50"
+                  >
+                    {promoLoading ? "..." : "Apply"}
+                  </button>
+                </div>
+                {promoError && (
+                  <p className="mt-2 text-xs text-red-500">{promoError}</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

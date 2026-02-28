@@ -5,6 +5,7 @@ import {
   Package,
   ShoppingCart,
   Star,
+  Ticket,
   Users,
   ArrowLeft,
   Settings,
@@ -16,6 +17,7 @@ const adminNav = [
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { href: "/admin/featured", label: "Featured", icon: Star },
+  { href: "/admin/promo-codes", label: "Promo Codes", icon: Ticket },
   { href: "/admin/subscribers", label: "Subscribers", icon: Users },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

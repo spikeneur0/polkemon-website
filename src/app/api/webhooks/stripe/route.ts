@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { generateOrderNumber } from "@/lib/utils";
+import { sendOrderConfirmation } from "@/lib/email";
 import type Stripe from "stripe";
 
 export async function POST(req: Request) {
@@ -63,9 +64,13 @@ export async function POST(req: Request) {
       0
     );
 
+    // Read promo code info from session metadata (set by checkout route)
+    const promoCode = session.metadata?.promoCode || null;
+    const discountCents = parseInt(session.metadata?.discountCents || "0", 10);
+
     // Use transaction to ensure order creation and inventory decrement are atomic
-    await db.$transaction(async (tx) => {
-      await tx.order.create({
+    const order = await db.$transaction(async (tx) => {
+      const createdOrder = await tx.order.create({
         data: {
           orderNumber: generateOrderNumber(),
           status: "CONFIRMED",
@@ -73,6 +78,8 @@ export async function POST(req: Request) {
           customerName: shippingDetails?.name || customerDetails?.name || "",
           shippingAddress,
           subtotalCents,
+          discountCents,
+          promoCode,
           totalCents: session.amount_total || subtotalCents,
           stripeSessionId: session.id,
           stripePaymentId: session.payment_intent as string,
@@ -98,7 +105,28 @@ export async function POST(req: Request) {
           },
         });
       }
+
+      return createdOrder;
     });
+
+    // Send order confirmation email (non-blocking, don't fail the webhook)
+    try {
+      await sendOrderConfirmation({
+        orderNumber: order.orderNumber,
+        customerName: shippingDetails?.name || customerDetails?.name || "",
+        customerEmail: customerDetails?.email || "",
+        items: productData.map((item) => ({
+          productName: item.name,
+          quantity: item.quantity,
+          priceCents: item.price,
+        })),
+        subtotalCents,
+        totalCents: session.amount_total || subtotalCents,
+        shippingAddress,
+      });
+    } catch (emailError) {
+      console.error("Failed to send order confirmation email:", emailError);
+    }
   }
 
   if (event.type === "charge.refunded") {

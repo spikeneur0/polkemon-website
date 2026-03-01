@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { promoLimiter, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
+    // Rate limit: 10 per IP per minute
+    const ip = getClientIp(req);
+    const { limited } = promoLimiter.check(ip);
+    if (limited) {
+      return NextResponse.json(
+        { valid: false, error: "Too many requests. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const { code, subtotalCents } = body as {
       code: string;

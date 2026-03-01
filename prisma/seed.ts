@@ -129,7 +129,12 @@ async function main() {
   console.log("Starting seed...");
 
   // 1. Create admin user
-  const hashedPassword = await hash("admin123", 12);
+  // IMPORTANT: Change this password immediately after first login
+  const defaultPassword =
+    "Ptc-" +
+    Math.random().toString(36).slice(2) +
+    Math.random().toString(36).slice(2);
+  const hashedPassword = await hash(defaultPassword, 12);
   await prisma.adminUser.upsert({
     where: { email: "admin@polkemontradingco.com" },
     update: {},
@@ -140,6 +145,9 @@ async function main() {
     },
   });
   console.log("Admin user created/verified.");
+  console.log(
+    `⚠️  Default admin password: ${defaultPassword} — change this immediately in production`
+  );
 
   // 2. Read ginza-products.json
   const jsonPath = path.join(__dirname, "..", "ginza-products.json");

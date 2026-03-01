@@ -1,49 +1,71 @@
 /**
- * Fix incorrect image matches from targeted search
- * These products got matched to wrong products
+ * fix-bad-matches-v3.ts
+ *
+ * Reverts incorrect image matches from the v2 fuzzy matching script.
+ * These are products where the score was too low and the match was wrong.
+ *
+ * Usage: npx tsx scripts/fix-bad-matches-v3.ts
  */
 
 import { PrismaClient } from "@prisma/client";
 
-const db = new PrismaClient();
+const prisma = new PrismaClient();
 
-// Products that got wrong images - need to be reverted
+// Products that were incorrectly matched — clear their images back to []
 const BAD_MATCHES = [
-  "devil-fruit-bracelet",          // Matched to "Devil Fruit Accessory Pouch Bag" - wrong product type
-  "yu-gi-oh-dragons-of-legends-2", // Matched to a single card, not the booster pack
-  "coke",                           // Matched to "Coke Plus" - different product
-  "ucc-matcha-latte",              // Matched to "Koeda Chocolate - Matcha Latte" - wrong product
-  "archeops-master-ball-pattern-sv11w",  // Matched to "Master Ball Plush" - completely wrong
-  "purrloin-master-ball-pattern-sv11w",  // Matched to "Master Ball Plush" - completely wrong
+  // Dragon Shield wrong color matches (matched to Scalding Tarn or wrong color)
+  "Dragon Shield: Crimson (Matte) 100ct",
+  "Dragon Shield: Arid Mesa (Dual Matte) 100ct",
+  "Dragon Shield: Verdant Catacombs (Dual Matte) 100ct",
+  "Dragon Shield: The Ur-Dragon (Dual Matte) 100ct",
+  "Dragonshield: Copper Matte 100CT",
+  "Dragon Shield: Amethyst Japanese 60ct",
+
+  // Coke (drink) matched to Labubu Coke figure
+  "Coke",
+
+  // Wrong products matched (different set/type)
+  "Pokémon: Team Rocket Tins",
+  "One Piece: EB04 JPN",
+  "Enamel Pins",
+  "Freiren: Beyond Journey's End Keychain",
+
+  // MTG wrong set matches
+  "Magic: The Gathering: Universes Beyond Fallout Commander Decks",
+  "Magic: The Gathering: Murders at Karlov Manor Commander Decks",
+  "Magic: The Gathering: Phyrexia All Will Be One - Set Booster Pack",
+  "Magic: The Gathering: Urza Saga Booster Pack",
+
+  // Weiss Schwarz wrong product
+  "Weiss Schwarz: Persona 3 Reload Premium Booster",
 ];
 
 async function main() {
-  console.log("=== Reverting Bad Matches ===\n");
+  console.log("Reverting bad image matches...\n");
 
-  for (const slug of BAD_MATCHES) {
-    const product = await db.product.findFirst({
-      where: { slug },
-      select: { id: true, name: true, images: true },
+  let fixed = 0;
+  for (const name of BAD_MATCHES) {
+    const result = await prisma.product.updateMany({
+      where: { name },
+      data: { images: [] },
     });
 
-    if (product && product.images.length > 0) {
-      await db.product.update({
-        where: { id: product.id },
-        data: { images: [] },
-      });
-      console.log(`  Reverted: ${product.name} (had ${product.images.length} image(s))`);
+    if (result.count > 0) {
+      console.log(`  REVERTED: "${name}" (${result.count} row(s))`);
+      fixed += result.count;
     } else {
-      console.log(`  Skipped: ${slug} (${product ? 'no images' : 'not found'})`);
+      console.log(`  NOT FOUND: "${name}"`);
     }
   }
 
-  const total = await db.product.count();
-  const withImages = await db.product.count({
-    where: { NOT: { images: { equals: [] } } },
-  });
-  console.log(`\nFinal: ${withImages}/${total} products have images (${((withImages / total) * 100).toFixed(1)}%)`);
-
-  await db.$disconnect();
+  console.log(`\nDone. Reverted ${fixed} bad matches.`);
 }
 
-main().catch(console.error);
+main()
+  .catch((err) => {
+    console.error("Fatal error:", err);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

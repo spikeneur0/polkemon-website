@@ -1,272 +1,259 @@
 /**
- * Fetch missing product images from various online sources
+ * fetch-missing-images.ts
  *
- * Strategy:
- * 1. For each product, try to find a product page on known retailer sites
- * 2. Fetch the page and extract og:image or product image URLs
- * 3. Update the database with found images
+ * Fetches product images from ginzatcg.com (Shopify) and matches them
+ * to local DB products that are missing images, then updates the DB.
+ *
+ * Usage: npx tsx scripts/fetch-missing-images.ts
  */
 
 import { PrismaClient } from "@prisma/client";
+import * as fs from "fs";
+import * as path from "path";
 
-const db = new PrismaClient();
+const prisma = new PrismaClient();
 
-// Known image URLs for products we've already found
-const KNOWN_IMAGES: Record<string, string[]> = {
-  // Pokemon
-  "pokmon-team-rocket-tins": [
-    "https://static-assets.pokemon.com/content-assets/cms2/img/trading-card-game/series/incrementals/2025/team-rocket-tins/team-rocket-tins-169-us.png",
-  ],
-  // Yu-Gi-Oh
-  "yu-gi-oh-phantom-revenge": [
-    "https://www.yugioh-card.com/en/wp-content/uploads/2025/08/PHRE-Foil-550x550-1.png",
-  ],
-};
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
-// Product-to-URL mapping for fetching
-const PRODUCT_URLS: Record<string, string[]> = {
-  // Pokemon
-  "pokmon-match-battle-pack": [
-    "https://www.pokemon.com/us/pokemon-tcg/product-gallery/pokemon-tcg-match-battle",
-    "https://www.tcgplayer.com/product/516527/pokemon-mcdonalds-promos-2023-mcdonalds-2023-match-and-battle-pack",
-  ],
-  "pokmon-sun-moon": [
-    "https://www.pokemon.com/us/pokemon-tcg/product-gallery/sun-moon",
-    "https://www.tcgplayer.com/product/126048/pokemon-sm-base-set-sun-and-moon-booster-box",
-  ],
-  "pokmon-starter-set-ex-terastal-stellar-ceruledge": [
-    "https://www.plazajapan.com/4521329374512/",
-    "https://ichiba-japan.com/en-us/products/starter-set-ex-terastal-stellar-ceruledge-pokemon-card-game",
-  ],
-  // Yu-Gi-Oh
-  "yu-gi-oh-dragons-of-legends-2": [
-    "https://www.tcgplayer.com/product/97680/yugioh-dragons-of-legend-2-dragons-of-legend-2-booster-box",
-    "https://yugipedia.com/wiki/Dragons_of_Legend_2",
-  ],
-  // Magic
-  "magic-the-gathering-phyrexia-all-will-be-one-set-booster-pack": [
-    "https://www.tcgplayer.com/product/451871/magic-phyrexia-all-will-be-one-phyrexia-all-will-be-one-set-booster-pack",
-  ],
-  // Digimon
-  "digimon-x-record-booster-pack-bt09": [
-    "https://www.tcgplayer.com/product/277569/digimon-card-game-x-record-x-record-booster-pack",
-  ],
-  // Weiss Schwarz
-  "weiss-schwarz-persona-3-reload-premium-booster": [
-    "https://www.tcgplayer.com/product/599677/weiss-schwarz-persona-3-reload-premium-booster-persona-3-reload-premium-booster-box",
-  ],
-  "weiss-schwarz-dandandan": [
-    "https://www.tcgplayer.com/product/657107/weiss-schwarz-dandadan-dandadan-booster-box",
-  ],
-  // Shadowverse
-  "shadowverse-umamusume-crossover-set": [
-    "https://en.shadowverse-evolve.com/products/cp01/",
-    "https://www.tcgplayer.com/search/shadowverse-evolve/umamusume-pretty-derby-crossover",
-  ],
-  "shadowverse-banquest-of-dreams": [
-    "https://www.tcgplayer.com/product/660622/shadowverse-evolve-bp14-banquet-of-dreams-cs-banquet-of-dreams-and-trial-of-the-omens-booster-box",
-  ],
-  // Models
-  "entry-grade-1144-wing-gundam": [
-    "https://www.gundamplanet.com/eg-wing-gundam.html",
-  ],
-  "hg-mighty-strike-freedom-gundam": [
-    "https://www.gundamplanet.com/hg-mighty-strike-freedom-gundam.html",
-  ],
-  "hg-1144-black-knight": [
-    "https://www.gundamplanet.com/hg-black-knight-squad-shi-ve-a.html",
-  ],
-  "hgb-bearguy-iii-san": [
-    "https://www.gundamplanet.com/hgbf-beargguy-iii.html",
-  ],
-  "rg-1144-akatsuki-gundam-oowashi-unit-mk": [
-    "https://www.gundamplanet.com/rg-akatsuki-gundam-oowashi-unit.html",
-  ],
-  "hguc-1144-baund-doc-zeta": [
-    "https://www.gundamplanet.com/hguc-baund-doc.html",
-  ],
-  "pokmon-model-kit-24-pichu": [
-    "https://www.gundamplanet.com/pokemon-24-pichu.html",
-  ],
-  "chopper-robo-super-2-heavy-armor": [
-    "https://www.gundamplanet.com/chopper-robo-super-2-heavy-armor.html",
-  ],
-  "chopper-robot-3-chopper-submarine": [
-    "https://www.gundamplanet.com/chopper-robot-3-chopper-submarine.html",
-  ],
-  "chopper-robot-2-chopper-wing": [
-    "https://www.gundamplanet.com/chopper-robot-2-chopper-wing.html",
-  ],
-};
-
-async function extractImageFromPage(url: string): Promise<string | null> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Accept": "text/html,application/xhtml+xml",
-      },
-    });
-    clearTimeout(timeout);
-
-    if (!res.ok) return null;
-
-    const html = await res.text();
-
-    // Try og:image first
-    const ogMatch = html.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i)
-      || html.match(/content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i);
-    if (ogMatch && ogMatch[1]) {
-      const imgUrl = ogMatch[1];
-      if (imgUrl.startsWith("http")) return imgUrl;
-      // Handle relative URLs
-      const base = new URL(url);
-      return new URL(imgUrl, base.origin).href;
-    }
-
-    // Try twitter:image
-    const twitterMatch = html.match(/<meta\s+(?:property|name)=["']twitter:image["']\s+content=["']([^"']+)["']/i)
-      || html.match(/content=["']([^"']+)["']\s+(?:property|name)=["']twitter:image["']/i);
-    if (twitterMatch && twitterMatch[1]) {
-      const imgUrl = twitterMatch[1];
-      if (imgUrl.startsWith("http")) return imgUrl;
-      const base = new URL(url);
-      return new URL(imgUrl, base.origin).href;
-    }
-
-    // Try product image patterns
-    const productImgMatch = html.match(/class=["'][^"']*product[^"']*image[^"']*["'][^>]*src=["']([^"']+)["']/i)
-      || html.match(/src=["']([^"']+)["'][^>]*class=["'][^"']*product[^"']*image[^"']*["']/i);
-    if (productImgMatch && productImgMatch[1]) {
-      const imgUrl = productImgMatch[1];
-      if (imgUrl.startsWith("http")) return imgUrl;
-      const base = new URL(url);
-      return new URL(imgUrl, base.origin).href;
-    }
-
-    // For TCGPlayer specifically, try their image pattern
-    const tcgMatch = html.match(/(https:\/\/[^"'\s]*tcgplayer[^"'\s]*\.(?:jpg|png|webp))/i);
-    if (tcgMatch) return tcgMatch[1];
-
-    // For Shopify stores, look for CDN images
-    const shopifyMatch = html.match(/(https:\/\/cdn\.shopify\.com\/[^"'\s]+\.(?:jpg|png|webp))/i);
-    if (shopifyMatch) return shopifyMatch[1];
-
-    return null;
-  } catch (e) {
-    return null;
-  }
+interface ShopifyImage {
+  src: string;
 }
 
-async function searchGoogleForImage(query: string): Promise<string | null> {
-  // Try DuckDuckGo instant answer API
-  try {
-    const encoded = encodeURIComponent(query);
-    const res = await fetch(`https://api.duckduckgo.com/?q=${encoded}&format=json&t=polkemon`);
-    const data = await res.json();
-    if (data.Image && data.Image.startsWith("http")) {
-      return data.Image;
-    }
-  } catch (e) {
-    // ignore
-  }
-  return null;
+interface ShopifyProduct {
+  title: string;
+  images: ShopifyImage[];
 }
 
-async function findImageForProduct(
-  slug: string,
-  name: string,
-  category: string
-): Promise<string[] | null> {
-  // Check known images first
-  if (KNOWN_IMAGES[slug]) {
-    return KNOWN_IMAGES[slug];
-  }
+interface ShopifyResponse {
+  products: ShopifyProduct[];
+}
 
-  // Try specific URLs
-  if (PRODUCT_URLS[slug]) {
-    for (const url of PRODUCT_URLS[slug]) {
-      const img = await extractImageFromPage(url);
-      if (img) {
-        console.log(`  Found via page: ${url}`);
-        return [img];
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function normalize(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Fuzzy match: returns true when one normalized name contains the other
+ * AND the shorter string is at least 60% the length of the longer one.
+ */
+function fuzzyMatch(a: string, b: string): boolean {
+  if (a === b) return true;
+  const shorter = a.length <= b.length ? a : b;
+  const longer = a.length > b.length ? a : b;
+  if (shorter.length / longer.length < 0.6) return false;
+  return longer.includes(shorter);
+}
+
+// ---------------------------------------------------------------------------
+// Fetch all Shopify products with pagination
+// ---------------------------------------------------------------------------
+
+async function fetchShopifyProducts(): Promise<ShopifyProduct[]> {
+  const allProducts: ShopifyProduct[] = [];
+  let page = 1;
+
+  console.log("Fetching products from ginzatcg.com Shopify store...\n");
+
+  while (true) {
+    const url = `https://www.ginzatcg.com/products.json?limit=250&page=${page}`;
+    console.log(`  Fetching page ${page}...`);
+
+    try {
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status} ${res.statusText}`);
       }
+
+      const data = (await res.json()) as ShopifyResponse;
+
+      if (!data.products || data.products.length === 0) {
+        console.log(`  Page ${page} returned 0 products -- done paginating.`);
+        break;
+      }
+
+      console.log(`  Got ${data.products.length} products from page ${page}.`);
+      allProducts.push(...data.products);
+      page++;
+
+      // polite delay between pages
+      await sleep(500);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`\nError fetching Shopify products (page ${page}): ${msg}`);
+      if (page === 1) {
+        console.error(
+          "Could not reach /products.json -- the store may not expose this endpoint."
+        );
+        return [];
+      }
+      // If we already have some products, stop paginating and use what we have.
+      console.error("Stopping pagination and using products fetched so far.");
+      break;
     }
   }
 
-  // Try DuckDuckGo
-  const ddgImage = await searchGoogleForImage(`${name} TCG product`);
-  if (ddgImage) {
-    console.log(`  Found via DuckDuckGo`);
-    return [ddgImage];
-  }
-
-  return null;
+  console.log(`\nTotal Shopify products fetched: ${allProducts.length}\n`);
+  return allProducts;
 }
 
-async function main() {
-  console.log("=== Fetching Missing Product Images ===\n");
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
 
-  const missing = await db.product.findMany({
-    where: { images: { equals: [] } },
-    select: { id: true, name: true, slug: true, category: true },
-    orderBy: { category: "asc" },
+async function main(): Promise<void> {
+  // 1. Fetch Shopify products
+  const shopifyProducts = await fetchShopifyProducts();
+
+  if (shopifyProducts.length === 0) {
+    console.log("No Shopify products available. Exiting.");
+    return;
+  }
+
+  // Build a lookup: normalized name -> first image src
+  // Also keep an array for fuzzy matching
+  const shopifyMap = new Map<
+    string,
+    { title: string; imageSrc: string }
+  >();
+  const shopifyEntries: { normalized: string; title: string; imageSrc: string }[] = [];
+
+  for (const sp of shopifyProducts) {
+    if (!sp.images || sp.images.length === 0) continue;
+    const norm = normalize(sp.title);
+    const imageSrc = sp.images[0].src;
+    if (!shopifyMap.has(norm)) {
+      shopifyMap.set(norm, { title: sp.title, imageSrc });
+    }
+    shopifyEntries.push({ normalized: norm, title: sp.title, imageSrc });
+  }
+
+  console.log(
+    `Shopify products with images (deduplicated by normalized name): ${shopifyMap.size}`
+  );
+  console.log(`Shopify entries for fuzzy matching: ${shopifyEntries.length}\n`);
+
+  // 2. Get DB products missing images
+  const dbProducts = await prisma.product.findMany({
+    where: {
+      isPublished: true,
+      images: { isEmpty: true },
+    },
+    select: {
+      id: true,
+      name: true,
+      category: true,
+    },
   });
 
-  console.log(`Products missing images: ${missing.length}\n`);
+  console.log(`DB products missing images: ${dbProducts.length}\n`);
 
-  let found = 0;
-  let notFound = 0;
-  const results: Array<{ slug: string; name: string; images: string[] }> = [];
-  const failures: Array<{ slug: string; name: string; category: string }> = [];
+  if (dbProducts.length === 0) {
+    console.log("All published products already have images. Nothing to do.");
+    return;
+  }
 
-  for (const product of missing) {
-    process.stdout.write(`[${product.category}] ${product.name}... `);
+  // 3. Match and update
+  let matchedCount = 0;
+  let updatedCount = 0;
+  const unmatched: { name: string; category: string }[] = [];
+  const matches: { dbName: string; shopifyName: string; imageUrl: string }[] = [];
 
-    const images = await findImageForProduct(
-      product.slug,
-      product.name,
-      product.category
-    );
+  for (const product of dbProducts) {
+    const norm = normalize(product.name);
 
-    if (images && images.length > 0) {
-      await db.product.update({
-        where: { id: product.id },
-        data: { images },
+    // Try exact normalized match first
+    let match = shopifyMap.get(norm);
+
+    // Try fuzzy matching if no exact match
+    if (!match) {
+      for (const entry of shopifyEntries) {
+        if (fuzzyMatch(norm, entry.normalized)) {
+          match = { title: entry.title, imageSrc: entry.imageSrc };
+          break;
+        }
+      }
+    }
+
+    if (match) {
+      matchedCount++;
+      matches.push({
+        dbName: product.name,
+        shopifyName: match.title,
+        imageUrl: match.imageSrc,
       });
-      found++;
-      results.push({ slug: product.slug, name: product.name, images });
-      console.log(`✓ Found ${images.length} image(s)`);
+
+      console.log(`MATCH: "${product.name}"`);
+      console.log(`    -> "${match.title}"`);
+      console.log(`    -> ${match.imageSrc}`);
+
+      try {
+        await prisma.product.update({
+          where: { id: product.id },
+          data: { images: [match.imageSrc] },
+        });
+        updatedCount++;
+        console.log(`    [UPDATED]\n`);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`    [UPDATE FAILED]: ${msg}\n`);
+      }
     } else {
-      notFound++;
-      failures.push({ slug: product.slug, name: product.name, category: product.category });
-      console.log(`✗ Not found`);
+      unmatched.push({ name: product.name, category: product.category });
+      console.log(`NO MATCH: "${product.name}" (${product.category})`);
     }
   }
 
-  console.log(`\n=== Results ===`);
-  console.log(`Found images: ${found}`);
-  console.log(`Not found: ${notFound}`);
+  // 4. Summary
+  console.log("\n========================================");
+  console.log("SUMMARY");
+  console.log("========================================");
+  console.log(`Total DB products missing images: ${dbProducts.length}`);
+  console.log(`Matched:   ${matchedCount}`);
+  console.log(`Updated:   ${updatedCount}`);
+  console.log(`Unmatched: ${unmatched.length}`);
+  console.log("========================================\n");
 
-  if (failures.length > 0) {
-    console.log(`\nStill missing:`);
-    for (const f of failures) {
-      console.log(`  [${f.category}] ${f.name} (${f.slug})`);
-    }
+  // 5. Save unmatched to file
+  if (unmatched.length > 0) {
+    const lines = unmatched.map((u) => `${u.name}  |  ${u.category}`);
+    const content = [
+      `Unmatched Products (${new Date().toISOString()})`,
+      `Total: ${unmatched.length}`,
+      "",
+      "Name  |  Category",
+      "------|----------",
+      ...lines,
+      "",
+    ].join("\n");
+
+    const outPath = path.join(__dirname, "unmatched-products.txt");
+    fs.writeFileSync(outPath, content, "utf-8");
+    console.log(`Unmatched products saved to: ${outPath}`);
+  } else {
+    console.log("All products matched -- no unmatched file written.");
   }
-
-  if (results.length > 0) {
-    console.log(`\nSuccessfully updated:`);
-    for (const r of results) {
-      console.log(`  ${r.name} → ${r.images[0].substring(0, 80)}...`);
-    }
-  }
-
-  await db.$disconnect();
 }
 
-main().catch(console.error);
+main()
+  .catch((err) => {
+    console.error("Fatal error:", err);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

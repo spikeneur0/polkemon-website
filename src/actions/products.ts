@@ -33,7 +33,13 @@ export async function createProduct(formData: FormData) {
         .map((t) => t.trim())
         .filter(Boolean)
     : [];
-  const images = imagesStr ? JSON.parse(imagesStr) : [];
+  let images: string[] = [];
+  try {
+    images = imagesStr ? JSON.parse(imagesStr) : [];
+    if (!Array.isArray(images)) images = [];
+  } catch {
+    images = [];
+  }
 
   let slug = slugify(name);
   const existingSlug = await db.product.findUnique({ where: { slug } });
@@ -88,7 +94,13 @@ export async function updateProduct(id: string, formData: FormData) {
         .map((t) => t.trim())
         .filter(Boolean)
     : [];
-  const images = imagesStr ? JSON.parse(imagesStr) : [];
+  let images: string[] = [];
+  try {
+    images = imagesStr ? JSON.parse(imagesStr) : [];
+    if (!Array.isArray(images)) images = [];
+  } catch {
+    images = [];
+  }
 
   // Check if market pricing is active — don't overwrite the synced price
   const existing = await db.product.findUnique({

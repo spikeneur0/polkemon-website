@@ -37,16 +37,43 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
-    const productData = JSON.parse(session.metadata?.productData || "[]") as {
+    let productData: {
       productId: string;
       name: string;
       sku: string | null;
       price: number;
       quantity: number;
-    }[];
+    }[] = [];
+    try {
+      const parsed = JSON.parse(session.metadata?.productData || "[]");
+      if (Array.isArray(parsed)) {
+        productData = parsed;
+      } else {
+        console.error("Invalid productData format in Stripe metadata");
+      }
+    } catch (parseError) {
+      console.error("Failed to parse productData from Stripe metadata:", parseError);
+      // Don't fail the webhook — log the error but still mark payment as received
+      // The order may need manual correction
+    }
 
-    const shippingDetails = (session as any).shipping_details;
-    const customerDetails = (session as any).customer_details;
+    // Stripe returns shipping_details on the session object but the SDK types
+    // nest it under collected_information. Use a typed assertion for the raw response.
+    const sessionData = session as Stripe.Checkout.Session & {
+      shipping_details?: {
+        name?: string;
+        address?: {
+          line1?: string;
+          line2?: string;
+          city?: string;
+          state?: string;
+          postal_code?: string;
+          country?: string;
+        };
+      };
+    };
+    const shippingDetails = sessionData.shipping_details;
+    const customerDetails = sessionData.customer_details;
 
     const shippingAddress = shippingDetails?.address
       ? {

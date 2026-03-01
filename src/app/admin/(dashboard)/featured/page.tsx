@@ -1,10 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
-import { Star, X, GripVertical } from "lucide-react";
+import {
+  Star,
+  X,
+  GripVertical,
+  ChevronRight,
+  ChevronDown,
+  Search,
+  ChevronsUpDown,
+} from "lucide-react";
 import { updateFeaturedProducts } from "@/actions/featured";
 import { formatPrice } from "@/lib/utils";
+import { CATEGORIES } from "@/lib/constants";
 
 interface Product {
   id: string;
@@ -16,11 +25,26 @@ interface Product {
   category: string;
 }
 
+/** Map category slug → display name from constants */
+const CATEGORY_NAME_MAP = Object.fromEntries(
+  CATEGORIES.map((c) => [c.slug, c.name])
+);
+
+function getCategoryName(slug: string) {
+  return CATEGORY_NAME_MAP[slug] || slug;
+}
+
 export default function AdminFeaturedPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [featured, setFeatured] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Available products state
+  const [search, setSearch] = useState("");
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set()
+  );
 
   useEffect(() => {
     fetch("/api/admin/products")
@@ -69,6 +93,76 @@ export default function AdminFeaturedPage() {
     alert("Featured products updated!");
   }
 
+  // ─── Available products: filter, group, sort ───
+  const availableProducts = useMemo(
+    () => products.filter((p) => !featured.includes(p.id)),
+    [products, featured]
+  );
+
+  const query = search.trim().toLowerCase();
+
+  const filteredProducts = useMemo(
+    () =>
+      query
+        ? availableProducts.filter((p) =>
+            p.name.toLowerCase().includes(query)
+          )
+        : availableProducts,
+    [availableProducts, query]
+  );
+
+  /** Grouped by category, sorted alphabetically by display name */
+  const groupedByCategory = useMemo(() => {
+    const map = new Map<string, Product[]>();
+    for (const p of filteredProducts) {
+      const cat = p.category || "other";
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat)!.push(p);
+    }
+
+    // Sort products within each category alphabetically
+    for (const list of map.values()) {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    // Return entries sorted by display name
+    return [...map.entries()].sort((a, b) =>
+      getCategoryName(a[0]).localeCompare(getCategoryName(b[0]))
+    );
+  }, [filteredProducts]);
+
+  // When searching, auto-expand categories with matches
+  const prevQueryRef = useRef("");
+  useEffect(() => {
+    if (query && query !== prevQueryRef.current) {
+      setExpandedCategories(new Set(groupedByCategory.map(([cat]) => cat)));
+    } else if (!query && prevQueryRef.current) {
+      // Search cleared → collapse all
+      setExpandedCategories(new Set());
+    }
+    prevQueryRef.current = query;
+  }, [query, groupedByCategory]);
+
+  function toggleCategory(cat: string) {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  }
+
+  function toggleAllCategories() {
+    if (expandedCategories.size === groupedByCategory.length) {
+      setExpandedCategories(new Set());
+    } else {
+      setExpandedCategories(new Set(groupedByCategory.map(([cat]) => cat)));
+    }
+  }
+
+  const allExpanded = expandedCategories.size === groupedByCategory.length && groupedByCategory.length > 0;
+
+  // ─── Render ───
   if (loading) {
     return (
       <div className="flex items-center justify-center p-20">
@@ -80,10 +174,6 @@ export default function AdminFeaturedPage() {
   const featuredProducts = featured
     .map((id) => products.find((p) => p.id === id))
     .filter(Boolean) as Product[];
-
-  const availableProducts = products.filter(
-    (p) => !featured.includes(p.id)
-  );
 
   return (
     <div className="p-6 lg:p-8">
@@ -141,7 +231,9 @@ export default function AdminFeaturedPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{product.name}</p>
+                    <p className="text-sm font-medium truncate">
+                      {product.name}
+                    </p>
                     <p className="text-xs text-muted-foreground tabular-nums">
                       {formatPrice(product.price)}
                     </p>
@@ -177,38 +269,110 @@ export default function AdminFeaturedPage() {
         {/* Available Products */}
         <div>
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Available Products
+            Available Products ({availableProducts.length})
           </h2>
-          <div className="space-y-2 max-h-[600px] overflow-y-auto">
-            {availableProducts.map((product) => (
-              <button
-                key={product.id}
-                onClick={() => toggleFeatured(product.id)}
-                className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-accent"
-              >
-                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded bg-muted">
-                  {product.images[0] ? (
-                    <Image
-                      src={product.images[0]}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-xs">
-                      🃏
+
+          {/* Search + Expand/Collapse controls */}
+          <div className="mb-3 flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search available products..."
+                className="h-9 w-full rounded-md border border-border bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <button
+              onClick={toggleAllCategories}
+              className="flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              title={allExpanded ? "Collapse All" : "Expand All"}
+            >
+              <ChevronsUpDown className="h-3.5 w-3.5" />
+              {allExpanded ? "Collapse All" : "Expand All"}
+            </button>
+          </div>
+
+          {/* Category accordion list */}
+          <div className="max-h-[600px] space-y-1 overflow-y-auto">
+            {groupedByCategory.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                {query
+                  ? "No products match your search"
+                  : "No available products"}
+              </div>
+            ) : (
+              groupedByCategory.map(([category, categoryProducts]) => {
+                const isExpanded = expandedCategories.has(category);
+                return (
+                  <div key={category} className="rounded-lg border border-border overflow-hidden">
+                    {/* Category header */}
+                    <button
+                      onClick={() => toggleCategory(category)}
+                      className="flex w-full items-center gap-2 bg-muted/50 px-3 py-2.5 text-left transition-colors hover:bg-muted"
+                    >
+                      {isExpanded ? (
+                        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      )}
+                      <span className="flex-1 text-sm font-medium">
+                        {getCategoryName(category)}
+                      </span>
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        {categoryProducts.length}
+                      </span>
+                    </button>
+
+                    {/* Collapsible product list */}
+                    <div
+                      className="transition-[grid-template-rows] duration-200 ease-in-out"
+                      style={{
+                        display: "grid",
+                        gridTemplateRows: isExpanded ? "1fr" : "0fr",
+                      }}
+                    >
+                      <div className="overflow-hidden">
+                        <div className="divide-y divide-border border-t border-border">
+                          {categoryProducts.map((product) => (
+                            <button
+                              key={product.id}
+                              onClick={() => toggleFeatured(product.id)}
+                              className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent"
+                            >
+                              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded bg-muted">
+                                {product.images[0] ? (
+                                  <Image
+                                    src={product.images[0]}
+                                    alt={product.name}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full items-center justify-center text-xs">
+                                    🃏
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">
+                                  {product.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground tabular-nums">
+                                  {formatPrice(product.price)}
+                                </p>
+                              </div>
+                              <Star className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{product.name}</p>
-                  <p className="text-xs text-muted-foreground tabular-nums">
-                    {formatPrice(product.price)}
-                  </p>
-                </div>
-                <Star className="h-4 w-4 text-muted-foreground" />
-              </button>
-            ))}
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>

@@ -23,7 +23,9 @@ export async function GET(req: Request) {
 
   try {
     const results = await searchCards(q.trim());
-    return NextResponse.json(results);
+    return NextResponse.json(results, {
+      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+    });
   } catch (err) {
     console.error("Card search error:", err);
     return NextResponse.json(

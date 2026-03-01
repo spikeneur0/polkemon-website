@@ -19,5 +19,7 @@ export async function GET() {
       category: true,
     },
   });
-  return NextResponse.json(products);
+  return NextResponse.json(products, {
+    headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+  });
 }

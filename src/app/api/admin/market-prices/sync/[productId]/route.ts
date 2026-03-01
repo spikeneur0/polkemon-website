@@ -15,7 +15,9 @@ export async function POST(
 
   try {
     const result = await syncSingleProduct(productId);
-    return NextResponse.json(result);
+    return NextResponse.json(result, {
+      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+    });
   } catch (err) {
     console.error("Single sync error:", err);
     return NextResponse.json(

@@ -9,7 +9,9 @@ export async function POST() {
   }
   try {
     const result = await syncAllProducts();
-    return NextResponse.json(result);
+    return NextResponse.json(result, {
+      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+    });
   } catch (err) {
     console.error("Sync all error:", err);
     return NextResponse.json(

@@ -20,13 +20,16 @@ export async function GET() {
       where: { marketPriceEnabled: true, tcgplayerId: { not: null } },
     });
 
-    return NextResponse.json({
-      usage,
-      recentLogs,
-      enabledProductCount: enabledCount,
-      estimatedBulkCalls: Math.ceil(enabledCount / 20),
-      apiKeyConfigured: !!process.env.JUSTTCG_API_KEY,
-    });
+    return NextResponse.json(
+      {
+        usage,
+        recentLogs,
+        enabledProductCount: enabledCount,
+        estimatedBulkCalls: Math.ceil(enabledCount / 20),
+        apiKeyConfigured: !!process.env.JUSTTCG_API_KEY,
+      },
+      { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
+    );
   } catch (err) {
     console.error("Usage fetch error:", err);
     return NextResponse.json(

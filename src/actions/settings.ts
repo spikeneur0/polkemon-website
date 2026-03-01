@@ -52,34 +52,35 @@ export async function bulkEnableMarketPricing() {
     },
   });
 
-  revalidatePath("/admin/products");
-  revalidatePath("/admin/settings");
+  revalidatePath("/", "layout");
   return { success: true, count: result.count };
 }
 
 export async function bulkDisableMarketPricing() {
   await requireAdmin();
-  // First, restore manual prices for all market-priced products
+  // Fetch all market-priced products to restore their manual prices
   const products = await db.product.findMany({
     where: { marketPriceEnabled: true },
     select: { id: true, manualPrice: true, price: true },
   });
 
-  for (const product of products) {
-    await db.product.update({
-      where: { id: product.id },
-      data: {
-        marketPriceEnabled: false,
-        price: product.manualPrice ?? product.price,
-        manualPrice: null,
-      },
-    });
+  // Batch all updates in a single transaction (1 DB round-trip instead of N)
+  if (products.length > 0) {
+    await db.$transaction(
+      products.map((product) =>
+        db.product.update({
+          where: { id: product.id },
+          data: {
+            marketPriceEnabled: false,
+            price: product.manualPrice ?? product.price,
+            manualPrice: null,
+          },
+        })
+      )
+    );
   }
 
-  revalidatePath("/admin/products");
-  revalidatePath("/admin/settings");
-  revalidatePath("/products");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return { success: true, count: products.length };
 }
 

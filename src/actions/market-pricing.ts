@@ -151,7 +151,5 @@ export async function unlinkCard(productId: string) {
 }
 
 function revalidatePaths() {
-  revalidatePath("/products");
-  revalidatePath("/admin/products");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }

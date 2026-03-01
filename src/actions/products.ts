@@ -62,9 +62,7 @@ export async function createProduct(formData: FormData) {
     },
   });
 
-  revalidatePath("/products");
-  revalidatePath("/admin/products");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 
   return { success: true, productId: product.id };
 }
@@ -129,9 +127,7 @@ export async function updateProduct(id: string, formData: FormData) {
     },
   });
 
-  revalidatePath("/products");
-  revalidatePath("/admin/products");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 
   return { success: true };
 }
@@ -139,9 +135,7 @@ export async function updateProduct(id: string, formData: FormData) {
 export async function deleteProduct(id: string) {
   await requireAdmin();
   await db.product.delete({ where: { id } });
-  revalidatePath("/products");
-  revalidatePath("/admin/products");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return { success: true };
 }
 
@@ -155,9 +149,7 @@ export async function toggleSoldOut(id: string) {
     data: { isSoldOut: !product.isSoldOut },
   });
 
-  revalidatePath("/products");
-  revalidatePath("/admin/products");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return { success: true };
 }
 
@@ -171,8 +163,6 @@ export async function togglePublished(id: string) {
     data: { isPublished: !product.isPublished },
   });
 
-  revalidatePath("/products");
-  revalidatePath("/admin/products");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return { success: true };
 }

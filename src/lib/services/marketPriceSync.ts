@@ -169,8 +169,7 @@ export async function syncAllProducts(): Promise<SyncResult> {
     triggeredBy: "manual",
   });
 
-  revalidatePath("/products");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 
   return {
     success: true,
@@ -245,8 +244,7 @@ export async function syncSingleProduct(
       triggeredBy: "single",
     });
 
-    revalidatePath("/products");
-    revalidatePath("/");
+    revalidatePath("/", "layout");
 
     return { success: true, priceCents, effectivePrice };
   } catch (err) {

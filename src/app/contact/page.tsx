@@ -1,5 +1,5 @@
 import { Mail, MapPin, Clock } from "lucide-react";
-import { SITE_NAME } from "@/lib/constants";
+import { SITE_NAME, BUSINESS } from "@/lib/constants";
 import { ContactForm } from "@/components/contact/contact-form";
 import type { Metadata } from "next";
 
@@ -36,10 +36,10 @@ export default function ContactPage() {
               For general inquiries and customer support:
             </p>
             <a
-              href="mailto:hello@polkemontradingco.com"
+              href={`mailto:${BUSINESS.email.support}`}
               className="mt-1 text-sm font-medium hover:underline"
             >
-              hello@polkemontradingco.com
+              {BUSINESS.email.support}
             </a>
           </div>
 
@@ -51,11 +51,11 @@ export default function ContactPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               {SITE_NAME}
               <br />
-              315 E Eisenhower Pkwy, STE 9B
+              {BUSINESS.address.line1}
               <br />
-              Ann Arbor, MI 48108
+              {BUSINESS.address.city}, {BUSINESS.address.state} {BUSINESS.address.zip}
               <br />
-              United States
+              {BUSINESS.address.country}
             </p>
           </div>
 

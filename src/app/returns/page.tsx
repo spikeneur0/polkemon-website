@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { SITE_NAME } from "@/lib/constants";
+import { SITE_NAME, BUSINESS } from "@/lib/constants";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -30,7 +30,7 @@ export default function ReturnsPage() {
           <h2 className="text-xl font-semibold">Return Eligibility</h2>
           <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">
             <p>
-              We accept returns within <strong className="text-foreground">14 days</strong> of
+              We accept returns within <strong className="text-foreground">{BUSINESS.returnWindowDays} days</strong> of
               delivery for sealed products in their original, unopened condition.
               To be eligible for a return, the item must be:
             </p>
@@ -74,7 +74,7 @@ export default function ReturnsPage() {
                 Ship the item back to us using a trackable shipping method at:
                 <br />
                 <strong className="text-foreground">
-                  Polkemon Trading Co, 315 E Eisenhower Pkwy, STE 9B, Ann Arbor, MI 48108
+                  {SITE_NAME}, {BUSINESS.address.full}
                 </strong>
                 <br />
                 Return shipping costs are the responsibility of the customer

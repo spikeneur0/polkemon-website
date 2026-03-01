@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import OrderConfirmationEmail from "@/emails/order-confirmation";
 import ContactNotificationEmail from "@/emails/contact-notification";
+import { SITE_NAME, BUSINESS } from "@/lib/constants";
 
 // Lazy init so build doesn't fail when RESEND_API_KEY isn't available
 let _resend: Resend | null = null;
@@ -21,7 +22,7 @@ export async function sendOrderConfirmation(order: {
   shippingAddress: { line1: string; city: string; state: string; zip: string };
 }) {
   const { data, error } = await getResend().emails.send({
-    from: "Polkemon Trading Co <orders@polkemontradingco.com>",
+    from: `${SITE_NAME} <${BUSINESS.email.orders}>`,
     to: order.customerEmail,
     subject: `Order Confirmed — ${order.orderNumber}`,
     react: OrderConfirmationEmail({
@@ -48,8 +49,8 @@ export async function sendContactNotification(message: {
   message: string;
 }) {
   const { data, error } = await getResend().emails.send({
-    from: "Polkemon Trading Co <noreply@polkemontradingco.com>",
-    to: "hello@polkemontradingco.com",
+    from: `${SITE_NAME} <${BUSINESS.email.noreply}>`,
+    to: BUSINESS.email.support,
     replyTo: message.email,
     subject: `Contact Form: ${message.subject}`,
     react: ContactNotificationEmail({

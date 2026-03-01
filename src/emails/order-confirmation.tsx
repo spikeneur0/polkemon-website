@@ -12,7 +12,7 @@ import {
   Preview,
 } from "@react-email/components";
 import { formatPrice } from "@/lib/utils";
-import { SITE_URL, SITE_NAME } from "@/lib/constants";
+import { SITE_URL, SITE_NAME, BUSINESS } from "@/lib/constants";
 
 interface OrderConfirmationEmailProps {
   orderNumber: string;
@@ -128,13 +128,13 @@ export default function OrderConfirmationEmail({
 
             <Text style={footerText}>
               If you have any questions about your order, reply to this email or
-              contact us at hello@polkemontradingco.com.
+              contact us at {BUSINESS.email.support}.
             </Text>
           </Section>
 
           <Section style={footer}>
             <Text style={footerBrand}>{SITE_NAME}</Text>
-            <Text style={footerMuted}>Ann Arbor, Michigan</Text>
+            <Text style={footerMuted}>{BUSINESS.address.city}, Michigan</Text>
           </Section>
         </Container>
       </Body>

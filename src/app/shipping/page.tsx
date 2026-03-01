@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { SITE_NAME } from "@/lib/constants";
+import { SITE_NAME, BUSINESS } from "@/lib/constants";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -66,7 +66,7 @@ export default function ShippingPage() {
             </div>
             <p>
               <strong className="text-foreground">Free shipping</strong> on all
-              orders over $75!
+              orders over {BUSINESS.freeShippingThresholdDisplay}!
             </p>
           </div>
         </section>

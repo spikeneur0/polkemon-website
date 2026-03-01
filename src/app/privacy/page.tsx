@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { SITE_NAME } from "@/lib/constants";
+import { SITE_NAME, BUSINESS } from "@/lib/constants";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -195,10 +195,10 @@ export default function PrivacyPage() {
             </Link>{" "}
             or email us at{" "}
             <a
-              href="mailto:hello@polkemontradingco.com"
+              href={`mailto:${BUSINESS.email.support}`}
               className="font-medium text-foreground underline"
             >
-              hello@polkemontradingco.com
+              {BUSINESS.email.support}
             </a>
             .
           </p>

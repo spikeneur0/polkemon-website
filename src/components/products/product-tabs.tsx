@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { BUSINESS } from "@/lib/constants";
 
 interface ProductTabsProps {
   description: string;
@@ -84,7 +85,7 @@ export function ProductTabs({ description }: ProductTabsProps) {
             </div>
             <p>
               <strong className="text-foreground">Free shipping</strong> on orders
-              over $75! See our full{" "}
+              over {BUSINESS.freeShippingThresholdDisplay}! See our full{" "}
               <Link href="/shipping" className="font-medium text-foreground underline">
                 shipping policy
               </Link>{" "}
@@ -96,7 +97,7 @@ export function ProductTabs({ description }: ProductTabsProps) {
         {activeTab === "returns" && (
           <div className="space-y-4">
             <p>
-              We accept returns within <strong className="text-foreground">14 days</strong> of
+              We accept returns within <strong className="text-foreground">{BUSINESS.returnWindowDays} days</strong> of
               delivery for sealed products in their original condition.
             </p>
             <ul className="ml-4 list-disc space-y-1.5">

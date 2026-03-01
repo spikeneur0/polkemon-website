@@ -1,4 +1,24 @@
 export const SITE_NAME = "Polkemon Trading Co";
+
+/** Centralized business details — edit here, used everywhere */
+export const BUSINESS = {
+  email: {
+    support: "hello@polkemontradingco.com",
+    orders: "orders@polkemontradingco.com",
+    noreply: "noreply@polkemontradingco.com",
+  },
+  address: {
+    line1: "315 E Eisenhower Pkwy, STE 9B",
+    city: "Ann Arbor",
+    state: "MI",
+    zip: "48108",
+    country: "United States",
+    full: "315 E Eisenhower Pkwy, STE 9B, Ann Arbor, MI 48108",
+  },
+  freeShippingThresholdCents: 7500,
+  freeShippingThresholdDisplay: "$75",
+  returnWindowDays: 14,
+} as const;
 export const SITE_DESCRIPTION =
   "Premium trading cards and accessories from Ann Arbor, Michigan. Pokemon, One Piece, Yu-Gi-Oh, Magic: The Gathering, and more.";
 export const SITE_URL =
